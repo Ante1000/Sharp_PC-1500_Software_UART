@@ -10,7 +10,9 @@ printer/cassette interface.
 | Document | Contents |
 |---|---|
 | [Instruction.pdf](Instruction.pdf) | full description and user manual |
+| [Instruction_Francais.pdf](Instruction_Francais.pdf) | full description and user manual, in French |
 | [Modification_for_use_with_CE-150_EN.pdf](Modification_for_use_with_CE-150_EN.pdf) | optional modification for use with the CE-150 |
+| [Modification_for_use_with_CE-150_Francais.pdf](Modification_for_use_with_CE-150_Francais.pdf) | optional modification for use with the CE-150, in French |
 | [HELP_NEW_memory.md](HELP_NEW_memory.md) | `NEW` values and routine/buffer addresses for every RAM configuration |
 
 ## Features
@@ -34,8 +36,9 @@ printer/cassette interface.
 
 | File | Contents |
 |---|---|
-| `pc1500_uart_installer-v6.2.txt` | BASIC installer and TX/RX tester, version 6.2 (also in `Basic/`) |
-| `pc1500_uart_link-v1.0.txt` | link program for two PC-1500s: demo, send text, receive |
+| `Basic/pc1500_uart_installer-v6.2.txt` | BASIC installer and TX/RX tester, version 6.2 |
+| `Basic/pc1500_uart_link-v1.0.txt` | link program for two PC-1500s: demo, send text, receive |
+| `asm/` | LH5801 assembler sources and listings of SEROUT and SERIN v6.2 |
 | `wav/SERINOUT.wav` | the installer as a tape recording, for `CLOAD` |
 | `wav/link.wav` | the link program as a tape recording, for `CLOAD` |
 | `img/` | connector drawing, connection diagrams and photos |
