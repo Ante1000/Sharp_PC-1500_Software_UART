@@ -67,7 +67,9 @@ The UART uses the 60-pin connector on the left side of the PC-1500(A):
   and the UART lines come out on a connector added to the CE-150.
 
 ![Connection 1: PC-1500A and a USB-UART (FTDI) cable](img/connection1_pc1500_ftdi.png)
+
 ![Connection 2: two PC-1500A computers](img/connection2_pc1500_pc1500%20%281%29.png)
+
 ![Connection 3: PC-1500A and an ESP32 board](img/connection3_pc1500_esp32.png)
 
 ## How to use
