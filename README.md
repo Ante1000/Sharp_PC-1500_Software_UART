@@ -28,7 +28,7 @@ printer/cassette interface.
   an RS-232 port (up to ±15 V) will destroy its electronics.
 - Tested with USB-UART (FTDI) cables, Sharp, Casio and NEC pocket computers, sensors and modules,
   Arduino boards (5 V) and ESP32 boards (3.3 V).
-- No port to open, select or close (unlike the CE-158): one `CALL` sends, one `CALL` receives.
+- No port to open, select or close (unlike the CE-158): one `CALL` sends, one `CALL` receives. Operates in packet mode, not continous mode.
 - Runs on a bare **PC-1500A**. A **PC-1500** needs a RAM module (e.g. CE-155), because the
   installer does not fit in its 2 KB.
 
