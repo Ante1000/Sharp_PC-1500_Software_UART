@@ -14,6 +14,7 @@ printer/cassette interface.
 | [Modification_for_use_with_CE-150_EN.pdf](Modification_for_use_with_CE-150_EN.pdf) | optional modification for use with the CE-150 |
 | [Modification_for_use_with_CE-150_Francais.pdf](Modification_for_use_with_CE-150_Francais.pdf) | optional modification for use with the CE-150, in French |
 | [HELP_NEW_memory.md](HELP_NEW_memory.md) | `NEW` values and routine/buffer addresses for every RAM configuration |
+| [CALIBRATION_19200.md](CALIBRATION_19200.md) | **test version** SERINOUT v7.0 for 19200 bps and its calibration with an Arduino UNO |
 
 ## Features
 
@@ -22,6 +23,8 @@ printer/cassette interface.
 - The routines work by bit-banging: the signals are generated and read bit by bit in software,
   without a dedicated hardware circuit.
 - Baud rate: **1200, 2400, 4800 or 9600 bps**, selected in the installer (default 4800 bps).
+  **19200 bps:** test version SERINOUT v7.0 with its own installer, to be calibrated on a real
+  PC-1500 with an Arduino UNO, see [CALIBRATION_19200.md](CALIBRATION_19200.md).
 - Format **8N1** (8 data bits, no parity, 1 stop bit), no RTS/CTS. An INVERSION option is
   available for devices with inverted signal levels.
 - **TTL/CMOS signal levels (+3.3 V / +5 V). This is NOT RS-232:** connecting the PC-1500(A) to
@@ -38,7 +41,10 @@ printer/cassette interface.
 |---|---|
 | `Basic/pc1500_uart_installer-v6.2.txt` | BASIC installer and TX/RX tester, version 6.2 |
 | `Basic/pc1500_uart_link-v1.0.txt` | link program for two PC-1500s: demo, send text, receive |
-| `asm/` | LH5801 assembler sources and listings of SEROUT and SERIN v6.2 |
+| `Basic/pc1500_uart_installer-v7.0_19200.txt` | BASIC installer of the 19200 bps test version SERINOUT v7.0, with the TX/RX tester |
+| `Basic/pc1500_uart19200_calibration-v1.0.txt` | PC-1500 program for the 19200 bps calibration with an Arduino UNO |
+| `arduino/UART_Calibration/` | Arduino UNO sketch that measures the 19200 bps timing and prints a report |
+| `asm/` | LH5801 assembler sources and listings of SEROUT and SERIN v6.2 and v7.0 (19200 bps) |
 | `wav/SERINOUT.wav` | the installer as a tape recording, for `CLOAD` |
 | `wav/link.wav` | the link program as a tape recording, for `CLOAD` |
 | `img/` | connector drawing, connection diagrams and photos |
