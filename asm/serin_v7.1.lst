@@ -20,9 +20,11 @@
                  ; Timing (MAME cycle table, 1 cycle = 0.769 us; 19200 bps = 67.7 cycles).
                  ; The calibration on a real PC-1500 measured 73.4 real cycles between two
                  ; samples of SERIN v7.0 with RB = 70 (3.4 more than MAME) and the first
-                 ; sample 7 cycles too early for RB = 64; v7.1 has the defaults RB = 64 and
-                 ; RQ = 22 and a later range for RQ.
-                 ; - Bit loop: RB = 51 + PAD R cycles (R = 12..20: RB = 63..71, default 64).
+                 ; sample 7 cycles too early for RB = 64; v7.1 has a later range for RQ.
+                 ; The second calibration (v7.1, RB = 64, RQ = 22) measured 51.2..51.3 us
+                 ; between samples (66.6 real cycles) and the samples about 4 us late:
+                 ; defaults RB = 65, RQ = 16.
+                 ; - Bit loop: RB = 51 + PAD R cycles (R = 12..20: RB = 63..71, default 65).
                  ;   Both paths (bit 0 / bit 1) take the same time. Counter: sentinel in A
                  ;   (LDI A,&80; after 8 ROR the 1 leaves into C), so no DEC/branch per bit.
                  ; - Start bit: the waiting loop polls the line every 33 cycles (with the
@@ -31,7 +33,7 @@
                  ;   (every 22 cycles, edge known to about +-1/6 bit): characters sent
                  ;   back to back are caught there. FSTART adds 5 cycles for the fast
                  ;   polls, so both entries sample at the same place.
-                 ; - RQ = 8 + PAD Q cycles (Q = 8 or 12..20: RQ = 16 or 20..28, default 22)
+                 ; - RQ = 8 + PAD Q cycles (Q = 8 or 12..20: RQ = 16 or 20..28, default 16)
                  ;   moves all samples: the first data bit is read about 1.5 bits after the
                  ;   start edge.
                  ; - The middle of the start bit is checked (noise filter), as in v6.x.
