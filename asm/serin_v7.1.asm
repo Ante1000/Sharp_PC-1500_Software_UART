@@ -1,5 +1,5 @@
 ; =====================================================================
-; SERIN v7.0 - software UART receiver 8N1 for the Sharp PC-1500(A),
+; SERIN v7.1 - software UART receiver 8N1 for the Sharp PC-1500(A),
 ; 19200 bps, input PB0 (pin 9) or PB2 (CMT-IN, pin 27), normal polarity
 ; (TTL: idle = high) or inverted (idle = low) - chosen in the installer.
 ; CPU LH5801 @ 1.3 MHz.
@@ -15,8 +15,12 @@
 ; within ~0.5 s of each other; after the M-th (or 255th) character the
 ; routine returns at once.
 ;
-; Timing (MAME cycle table, 1 cycle = 0.769 us; 19200 bps = 67.7 cycles):
-; - Bit loop: RB = 51 + PAD R cycles (R = 12..20: RB = 63..71, default 66).
+; Timing (MAME cycle table, 1 cycle = 0.769 us; 19200 bps = 67.7 cycles).
+; The calibration on a real PC-1500 measured 73.4 real cycles between two
+; samples of SERIN v7.0 with RB = 70 (3.4 more than MAME) and the first
+; sample 7 cycles too early for RB = 64; v7.1 has the defaults RB = 64 and
+; RQ = 22 and a later range for RQ.
+; - Bit loop: RB = 51 + PAD R cycles (R = 12..20: RB = 63..71, default 64).
 ;   Both paths (bit 0 / bit 1) take the same time. Counter: sentinel in A
 ;   (LDI A,&80; after 8 ROR the 1 leaves into C), so no DEC/branch per bit.
 ; - Start bit: the waiting loop polls the line every 33 cycles (with the
@@ -25,8 +29,9 @@
 ;   (every 22 cycles, edge known to about +-1/6 bit): characters sent
 ;   back to back are caught there. FSTART adds 5 cycles for the fast
 ;   polls, so both entries sample at the same place.
-; - PAD Q (8 or 12..20 cycles, default 12) moves all samples: the first
-;   data bit is read about 1.5 bits after the start edge.
+; - RQ = 8 + PAD Q cycles (Q = 8 or 12..20: RQ = 16 or 20..28, default 22)
+;   moves all samples: the first data bit is read about 1.5 bits after the
+;   start edge.
 ; - The middle of the start bit is checked (noise filter), as in v6.x.
 ; - DEC sets C when the value was not 0 before, and BII does not change C,
 ;   so polls can sit between DEC and the BCS that tests it: no long gaps.
@@ -86,7 +91,8 @@ FSTART: NOP                     ; entry from the fast polls (edge known better)
 SSTART: BII  #(Y),BM            ; middle of the start bit: still space?
         BMK- WL                 ; no: noise, wait again
         LDI  A,&80              ; sentinel: leaves into C after 8 bits
-        PAD  4,Q                ; timing: position of the samples
+        BCH+ SQ                 ; 8 cycles: RQ = 8 + pad Q
+SQ:     PAD  4,Q                ; timing: position of the samples
 BIT:    PAD  4,R                ; timing: length of a bit
         BII  #(Y),BM            ; read the bit
         BSP+ ZERO

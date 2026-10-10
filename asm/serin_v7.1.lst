@@ -1,7 +1,7 @@
-; SERIN v7.0 - listing (addresses relative to SI = RAM+&130), 160 bytes
+; SERIN v7.1 - listing (addresses relative to SI = RAM+&130), 162 bytes
 ;
                  ; =====================================================================
-                 ; SERIN v7.0 - software UART receiver 8N1 for the Sharp PC-1500(A),
+                 ; SERIN v7.1 - software UART receiver 8N1 for the Sharp PC-1500(A),
                  ; 19200 bps, input PB0 (pin 9) or PB2 (CMT-IN, pin 27), normal polarity
                  ; (TTL: idle = high) or inverted (idle = low) - chosen in the installer.
                  ; CPU LH5801 @ 1.3 MHz.
@@ -17,8 +17,12 @@
                  ; within ~0.5 s of each other; after the M-th (or 255th) character the
                  ; routine returns at once.
                  ;
-                 ; Timing (MAME cycle table, 1 cycle = 0.769 us; 19200 bps = 67.7 cycles):
-                 ; - Bit loop: RB = 51 + PAD R cycles (R = 12..20: RB = 63..71, default 66).
+                 ; Timing (MAME cycle table, 1 cycle = 0.769 us; 19200 bps = 67.7 cycles).
+                 ; The calibration on a real PC-1500 measured 73.4 real cycles between two
+                 ; samples of SERIN v7.0 with RB = 70 (3.4 more than MAME) and the first
+                 ; sample 7 cycles too early for RB = 64; v7.1 has the defaults RB = 64 and
+                 ; RQ = 22 and a later range for RQ.
+                 ; - Bit loop: RB = 51 + PAD R cycles (R = 12..20: RB = 63..71, default 64).
                  ;   Both paths (bit 0 / bit 1) take the same time. Counter: sentinel in A
                  ;   (LDI A,&80; after 8 ROR the 1 leaves into C), so no DEC/branch per bit.
                  ; - Start bit: the waiting loop polls the line every 33 cycles (with the
@@ -27,8 +31,9 @@
                  ;   (every 22 cycles, edge known to about +-1/6 bit): characters sent
                  ;   back to back are caught there. FSTART adds 5 cycles for the fast
                  ;   polls, so both entries sample at the same place.
-                 ; - PAD Q (8 or 12..20 cycles, default 12) moves all samples: the first
-                 ;   data bit is read about 1.5 bits after the start edge.
+                 ; - RQ = 8 + PAD Q cycles (Q = 8 or 12..20: RQ = 16 or 20..28, default 22)
+                 ;   moves all samples: the first data bit is read about 1.5 bits after the
+                 ;   start edge.
                  ; - The middle of the start bit is checked (noise filter), as in v6.x.
                  ; - DEC sets C when the value was not 0 before, and BII does not change C,
                  ;   so polls can sit between DEC and the BCS that tests it: no long gaps.
@@ -53,7 +58,7 @@
 05  04                   LDA  XL                 ; CALL SI,M: X = M
 06  89 02                BZR+ SETM               ; M = 1..255
 08  B5 FF        MAXM:   LDI  A,&FF              ; M = 0 -> 255 (whole buffer)
-0A  AE CP 9C     SETM:   STA  (CP,&30+CMPM+1)    ; M into CPI XL,M (SI = RAM+&130)
+0A  AE CP 9E     SETM:   STA  (CP,&30+CMPM+1)    ; M into CPI XL,M (SI = RAM+&130)
 0D  48 RP                LDI  XH,RP              ; X = RX (start of a page)
 0F  4A 00                LDI  XL,0
 11  58 F0                LDI  YH,&F0             ; Y = &F00D (DDB, direction register of port B)
@@ -69,7 +74,7 @@
 27  93 0B                BCS- WH
 29  DF                   DEC  A
 2A  93 0E                BCS- WH
-2C  8E 6A                BCH+ DONE               ; time-out
+2C  8E 6C                BCH+ DONE               ; time-out
 2E  FD 5D BM     WL:     BII  #(Y),BM            ; wait for the start bit (space), poll every 33 cycles
 31  FS 1B                BSP+ SSTART
 33  88 07                LOP  UL,WL
@@ -83,43 +88,44 @@
 44  FD 5D BM             BII  #(Y),BM
 47  FS 05                BSP+ SSTART
 49  93 1D                BCS- WL
-4B  8E 4B                BCH+ DONE               ; time-out
+4B  8E 4D                BCH+ DONE               ; time-out
 4D  38           FSTART: NOP                     ; entry from the fast polls (edge known better)
 4E  FD 5D BM     SSTART: BII  #(Y),BM            ; middle of the start bit: still space?
 51  RM 25                BMK- WL                 ; no: noise, wait again
 53  B5 80                LDI  A,&80              ; sentinel: leaves into C after 8 bits
-55  Q1 Q2 Q3 Q4          PAD  4,Q                ; timing: position of the samples
-59  R1 R2 R3 R4  BIT:    PAD  4,R                ; timing: length of a bit
-5D  FD 5D BM             BII  #(Y),BM            ; read the bit
-60  FS 03                BSP+ ZERO
-62  FB                   SEC                     ; mark: 1
-63  8E 02                BCH+ JOIN
-65  F9           ZERO:   REC                     ; space: 0
-66  38                   NOP                     ; (both paths 34 cycles)
-67  D1           JOIN:   ROR                     ; LSB first; C = sentinel after the 8th bit
-68  91 11                BCR- BIT
-6A  41                   SIN  X                  ; store the character, X++
-6B  4E 00        CMPM:   CPI  XL,0               ; M characters received? (M written at the start)
-6D  8B 29                BZS+ DONE
-6F  68 4C                LDI  UH,76              ; time-out between characters:
-71  B5 00                LDI  A,0                ; 77*256 polls, about 0.5 s
-73  FD 5D BM             BII  #(Y),BM            ; 7 fast polls for the next start bit; the
-76  RS 2B                BSP- FSTART             ; first one about 1.2 bits after the last
-78  FD 5D BM             BII  #(Y),BM            ; data bit was read, before the next start
-7B  RS 30                BSP- FSTART             ; bit of characters sent back to back
-7D  FD 5D BM             BII  #(Y),BM
-80  RS 35                BSP- FSTART
-82  FD 5D BM             BII  #(Y),BM
-85  RS 3A                BSP- FSTART
-87  FD 5D BM             BII  #(Y),BM
-8A  RS 3F                BSP- FSTART
-8C  FD 5D BM             BII  #(Y),BM
-8F  RS 44                BSP- FSTART
-91  FD 5D BM             BII  #(Y),BM
-94  RS 49                BSP- FSTART
-96  9E 6A                BCH- WL                 ; then the polls with the time-out
-98  04           DONE:   LDA  XL                 ; number of characters = XL (RX starts a page)
-99  AE CP FF             STA  (CP,&FF)           ; RC = number of characters
-9C  48 00                LDI  XH,0               ; X = number of characters ...
-9E  FB                   SEC                     ; ... C=1: BASIC puts X into the variable of CALL SI,M
-9F  9A                   RTN
+55  8E 00                BCH+ SQ                 ; 8 cycles: RQ = 8 + pad Q
+57  Q1 Q2 Q3 Q4  SQ:     PAD  4,Q                ; timing: position of the samples
+5B  R1 R2 R3 R4  BIT:    PAD  4,R                ; timing: length of a bit
+5F  FD 5D BM             BII  #(Y),BM            ; read the bit
+62  FS 03                BSP+ ZERO
+64  FB                   SEC                     ; mark: 1
+65  8E 02                BCH+ JOIN
+67  F9           ZERO:   REC                     ; space: 0
+68  38                   NOP                     ; (both paths 34 cycles)
+69  D1           JOIN:   ROR                     ; LSB first; C = sentinel after the 8th bit
+6A  91 11                BCR- BIT
+6C  41                   SIN  X                  ; store the character, X++
+6D  4E 00        CMPM:   CPI  XL,0               ; M characters received? (M written at the start)
+6F  8B 29                BZS+ DONE
+71  68 4C                LDI  UH,76              ; time-out between characters:
+73  B5 00                LDI  A,0                ; 77*256 polls, about 0.5 s
+75  FD 5D BM             BII  #(Y),BM            ; 7 fast polls for the next start bit; the
+78  RS 2D                BSP- FSTART             ; first one about 1.2 bits after the last
+7A  FD 5D BM             BII  #(Y),BM            ; data bit was read, before the next start
+7D  RS 32                BSP- FSTART             ; bit of characters sent back to back
+7F  FD 5D BM             BII  #(Y),BM
+82  RS 37                BSP- FSTART
+84  FD 5D BM             BII  #(Y),BM
+87  RS 3C                BSP- FSTART
+89  FD 5D BM             BII  #(Y),BM
+8C  RS 41                BSP- FSTART
+8E  FD 5D BM             BII  #(Y),BM
+91  RS 46                BSP- FSTART
+93  FD 5D BM             BII  #(Y),BM
+96  RS 4B                BSP- FSTART
+98  9E 6C                BCH- WL                 ; then the polls with the time-out
+9A  04           DONE:   LDA  XL                 ; number of characters = XL (RX starts a page)
+9B  AE CP FF             STA  (CP,&FF)           ; RC = number of characters
+9E  48 00                LDI  XH,0               ; X = number of characters ...
+A0  FB                   SEC                     ; ... C=1: BASIC puts X into the variable of CALL SI,M
+A1  9A                   RTN

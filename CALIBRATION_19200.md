@@ -1,11 +1,12 @@
-# SERINOUT v7.0: 19200 bps, and its calibration with an Arduino UNO
+# SERINOUT v7.1: 19200 bps, and its calibration with an Arduino UNO
 
-> **Status: test version.** SEROUT and SERIN v7.0 have so far only run in an LH5801 simulator
-> (cycle counts from MAME, plus the extra time of port instructions measured on a real PC-1500,
-> see below). Before they are used, their three timing constants are measured and set on a real
-> PC-1500 with the Arduino calibration on this page. Please send the calibration report.
+> **Status: test version.** SERINOUT v7.0 was calibrated once on a real PC-1500 (report below).
+> The report showed that the real PC-1500 is slower than the cycle table used for v7.0, by more
+> than the timing ranges of v7.0 could correct, so SEROUT and SERIN were changed to **v7.1**. v7.1
+> has so far only run in the LH5801 simulator, with models of the PC-1500 fitted to that report.
+> Please calibrate it again with the Arduino and send the report.
 
-SERINOUT v7.0 is used exactly like v6.2: the same `CALL`s, buffers and addresses
+SERINOUT v7.1 is used exactly like v6.2: the same `CALL`s, buffers and addresses
 ([README](README.md#commands)), but at **19200 bps only** (8N1, normal or inverted polarity, RX on
 PB2 or PB0). It moves up to about 1.9 KB/s, twice the 9600 bps of v6.2.
 
@@ -13,23 +14,26 @@ PB2 or PB0). It moves up to about 1.9 KB/s, twice the 9600 bps of v6.2.
 
 | File | Contents |
 |---|---|
-| `Basic/pc1500_uart_installer-v7.0_19200.txt` | BASIC installer of SERINOUT v7.0 (19200 bps), with the TX/RX test of v6.2 |
-| `Basic/pc1500_uart19200_calibration-v1.0.txt` | PC-1500 calibration program: talks to the Arduino, can set new timing constants |
-| `arduino/UART_Calibration/` | Arduino UNO sketch (one file, `UART_Calibration.ino`) that measures the timing and prints the report |
-| `asm/serout_v7.0.asm`, `asm/serin_v7.0.asm` | LH5801 sources (and `.lst` listings) of SEROUT and SERIN v7.0 |
+| `Basic/pc1500_uart19200_calibration-v1.1.txt` | PC-1500 calibration program: installs SERINOUT v7.1 itself, talks to the Arduino, can set new timing constants |
+| `arduino/UART_Calibration/` | Arduino UNO sketch v4 (one file, `UART_Calibration.ino`) that measures the timing and prints the report |
+| `Basic/pc1500_uart_installer-v7.1_19200.txt` | BASIC installer of SERINOUT v7.1 (19200 bps), with the TX/RX test of v6.2: for use after the calibration (other polarity, PB0) |
+| `asm/serout_v7.1.asm`, `asm/serin_v7.1.asm` | LH5801 sources (and `.lst` listings) of SEROUT and SERIN v7.1 |
 
 ## Why 19200 needs new code
 
 At 19200 bps a bit lasts 52.08 µs, that is 67.7 cycles of the LH5801 at 1.3 MHz. The bit loops of
 v6.x need at least 79 cycles (they contain a delay loop `LDI`/`LOP` and a bit counter), so they
-cannot go faster than about 16 000 bps. v7.0 has new loops without a delay loop:
+cannot go faster than about 16 000 bps. v7.x has new loops without a delay loop:
 
-- **SEROUT:** both branches (bit 0 / bit 1) take 33 cycles, then a 2-byte timing pad (6–10
-  cycles), `SHR`, `BII A,&FF` and the branch: one bit = **TB = 57 + pad = 63…67 cycles**. The
-  start bit and the last data bit have the same length; the stop bit is 1.03 bits.
+- **SEROUT:** both branches (bit 0 / bit 1) take 33 cycles, then a 3-byte timing pad (8 or 10–15
+  cycles), `SHR` and `LOP UL` (the bit counter): one bit = **TB = 50 + pad = 58 or 60…65
+  cycles** (MAME's cycle table). The start bit and the last data bit have the same length; the
+  stop bit is about 1 bit. The character counter is `XL` (the TX buffer starts a page) with a
+  `CPI XL,N` whose N the routine writes into its own code at the start.
 - **SERIN:** the bit counter is a sentinel bit in A (after 8 `ROR` it leaves into C), the two
   paths of a bit take the same time, and a 4-byte pad sets the length: **RB = 51 + pad =
-  63…71 cycles**. Another 4-byte pad, **RQ** (8 or 12…20 cycles), moves all 8 samples.
+  63…71 cycles**. A fixed 8-cycle jump and another 4-byte pad, **RQ = 8 + pad = 16 or 20…28
+  cycles**, move all 8 samples.
 - **Finding the start bit** is the hard part of a software UART: the line is polled, so the
   edge is only known to within one poll. The loop with the 30 s / 0.5 s time-out polls every 33
   cycles (half a bit at 19200). After each character SERIN therefore polls 7 times without a
@@ -37,31 +41,57 @@ cannot go faster than about 16 000 bps. v7.0 has new loops without a delay loop:
   devices do, are found there, more precisely. The middle of the start bit is checked (noise
   filter), as in v6.x.
 
-**Port instructions are slower on a real PC-1500.** The I2C master measured on a real PC-1500
-showed that every `ORI`/`ANI` on a port takes about 1.9 cycles longer than in MAME's table (I2C
-v1.2 and v1.3 have the same number of port instructions in the measured transfer and were both
-slower by the same 1397 cycles, although v1.3 has 144 instructions less). One TX bit has one
-such instruction, so the default **TB = 66** gives 67.9 real cycles: 52.2 µs, +0.3 %. For the
-`BII` that reads the RX line the extra time is not known yet; the defaults **RB = 66, RQ = 12**
-assume the same 1.9 cycles. This is what the calibration measures.
+38400 bps is not possible: a bit would have only 34 cycles.
 
-In the simulator (with these 1.9 cycles) SERIN v7.0 receives without errors when the sender is
-3 % slower to 2 % faster than 19200 bps; the samples lie within ±0.19 bit of the middle of the
-bits for characters sent back to back and within ±0.26 bit after pauses. 38400 bps is not
-possible: a bit would have only 34 cycles.
+## The first calibration (SERINOUT v7.0) and what changed in v7.1
+
+v7.0 was written with MAME's cycle table plus 1.9 extra cycles per `ORI`/`ANI` on a port (measured
+with the I2C master). The first report from a real PC-1500 (sketch v3) showed:
+
+| | v7.0 setting | measured | in cycles |
+|---|---|---|---|
+| TX bit | TB = 67 | 56.37 µs (+8.2 %) | 73.3 real cycles: **6.3 more** than the table |
+| RX bit (time between samples) | RB = 70 | 56.44 µs (+8.4 %) | 73.4 real cycles: **3.4 more** than the table |
+| first RX sample | RQ = 15 | 78.1 µs after the start edge | (ideal 78.1 µs) |
+
+The TX would have needed TB ≈ 61.4, but v7.0 could not go below 63; the RX needed RB ≈ 64,
+which moves the first sample about 6 cycles earlier, and a later RQ than v7.0 had. With RB = 70
+the samples drifted late, so characters sent back to back were not received (the "fast" probes
+were lost) and random data had errors.
+
+v7.1 therefore has:
+
+- **SEROUT v7.1:** a shorter bit loop (bit counter `LOP UL` instead of a sentinel and
+  `BII A,&FF`, 7 cycles less), TB = 58 or 60…65, **default TB = 62**.
+- **SERIN v7.1:** a fixed 8-cycle jump before the RQ pad, so RQ = 16 or 20…28, **default
+  RB = 64, RQ = 22**.
+
+The report gives the length of whole bits, not which instructions take the extra time. Three
+models of the PC-1500 (extra cycles for the port writes, `SHR`, `ROR`, `BII`, `NOP` in different
+proportions) reproduce the measured TX and RX bit lengths within 0.25 µs; they put the first
+RX sample 2.5…3.5 µs later than measured, so the default RQ is about 2 cycles later than the
+models alone would suggest. For v7.1 with the defaults the simulator gives with these models:
+
+- TX bit 51.7 … 52.5 µs (−0.7 % … +0.9 %), depending on the model;
+- RX: samples within −0.36 … +0.30 bit of the middle of the bits; no errors when the sender is
+  about 3 % slower to 3 % faster than 19200 bps (two models) or 1 % slower to 4 % faster (the
+  third model, whose RX bit is 2 % short with RB = 64; the calibration then suggests RB = 65…66).
+
+Sketch v4 also reports the mean of each 2-bit interval of the TX burst; these differ slightly
+between the models and show which one fits the real PC-1500.
 
 ## Timing constants
 
 | Constant | Meaning | Values | Default |
 |---|---|---|---|
-| TB | length of a TX bit in MAME cycles | 63…67 | 66 |
-| RB | length of an RX bit (time between two samples) in MAME cycles | 63…71 | 66 |
-| RQ | position of the RX samples (larger = later), cycles | 8, 12…20 | 12 |
+| TB | length of a TX bit in MAME cycles | 58, 60…65 | 62 |
+| RB | length of an RX bit (time between two samples) in MAME cycles | 63…71 | 64 |
+| RQ | position of the RX samples (larger = later), cycles | 16, 20…28 | 22 |
 
-The installer uses the defaults when you press ENTER at `TIMING (ENTER=STD,1=SET)`; answer `1` to
-type other values. The calibration program can also change them in the installed code (answer
-`1` at `NEW TIMING`), so the installer does not have to be typed in again. The values are stored
-at RAM+&1FC…&1FE.
+The calibration program uses the defaults the first time and keeps the values of an installed
+v7.1 after that. Answer `1` at `NEW TIMING (1=YES)?` to type other values. The values are stored
+at RAM+&1FC…&1FE. The installer uses the defaults when you press ENTER at
+`TIMING (ENTER=STD,1=SET)`; answer `1` to type the calibrated values.
 
 ## Calibration
 
@@ -85,22 +115,25 @@ CE-150.
 
 1. On the PC-1500, in PRO mode: `NEW0`, then `NEW &4400` (other RAM configurations:
    [HELP_NEW_memory.md](HELP_NEW_memory.md)).
-2. Type in `Basic/pc1500_uart_installer-v7.0_19200.txt` and `RUN` it: RX port ENTER (PB2),
-   inversion ENTER (no), timing ENTER (defaults). The TX/RX tests can be skipped with `0`.
-3. In PRO mode enter `NEW` (removes the installer, the code stays), then type in
-   `Basic/pc1500_uart19200_calibration-v1.0.txt`.
-4. Upload `arduino/UART_Calibration/UART_Calibration.ino` to the UNO and open the serial
-   monitor at **115200 bps**.
-5. `RUN` the calibration program on the PC-1500. It shows the installed TB, RB and RQ, asks
-   `NEW TIMING (1=YES)?` (press ENTER the first time) and `ARDUINO READY? ENTER`.
-6. The PC-1500 sends a header and 64 × 'U', then answers the Arduino block by block
+2. Type in `Basic/pc1500_uart19200_calibration-v1.1.txt`. The installer is not needed: the
+   calibration program installs SERINOUT v7.1 (normal polarity, RX on PB2) every time it runs.
+3. Upload `arduino/UART_Calibration/UART_Calibration.ino` (sketch v4) to the UNO and open the
+   serial monitor at **115200 bps**.
+4. `RUN` the calibration program on the PC-1500. It shows TB, RB and RQ, asks
+   `NEW TIMING (1=YES)?` (press ENTER the first time), shows `INSTALLING v7.1...` (a few seconds)
+   and asks `ARDUINO READY? ENTER`.
+5. The PC-1500 sends a header and 64 × 'U', then answers the Arduino block by block
    (`BLOCKS: 10`, `20`, …, less than a minute). About 30 s after the last block it shows
    `END: 44 BLOCKS`. The Arduino prints the report as soon as it has finished.
-7. Copy the report from the serial monitor, from the line
-   `=== PC-1500 SERINOUT v7.0 19200 calibration report ===` to the line `=== end of report ...`,
+6. Copy the report from the serial monitor, from the line
+   `=== PC-1500 SERINOUT 19200 calibration report ===` to the line `=== end of report ...`,
    and send it.
-8. To try other constants (for example the `SUGGESTED` ones), `RUN` the calibration program
-   again and answer `1` at `NEW TIMING`; it writes them into SEROUT/SERIN and measures again.
+7. To try other constants (for example the `SUGGESTED` ones), `RUN` the calibration program
+   again and answer `1` at `NEW TIMING`; it installs SERINOUT v7.1 with them and measures again.
+
+After the calibration SERINOUT v7.1 stays installed with the last constants (normal polarity,
+PB2) and can be used at once. For inverted polarity or PB0, run the installer v7.1 and type the
+calibrated constants at `TIMING`.
 
 If the program is stopped with BREAK during the echo loop, enter `RUN 210`: during the loop
 SEROUT sends from the RX buffer, `RUN 210` switches it back to the TX buffer.
@@ -110,15 +143,17 @@ SEROUT sends from the RX buffer, `RUN 210` switches it back to the TX buffer.
 | Line | Meaning |
 |---|---|
 | `TX 64 x 'U': bit … us` | length of a PC-1500 TX bit (falling-to-falling edges, 2 bits each); ideal 52.08 µs; also in LH5801 cycles, with the change of TB that is needed |
-| `stop bit` | length of the stop bit in bits (about 1.03) |
-| `RX probe fast` / `RX probe slow` | when SERIN reads each data bit, in µs after the start edge sent by the Arduino: earliest, mean and latest sample; ideal = middle of the bit. "fast" = characters back to back (fast polls), "slow" = 4-bit pauses (polls with the time-out) |
-| `needed change of RB` | change of the RX bit in cycles, not rounded and not limited to the v7.0 range |
+| `2-bit intervals` | the mean of each of the 5 falling-to-falling intervals of a 'U' frame (start + bit 0, bits 1+2, 3+4, 5+6, bit 7 + stop bit); ideal 104.17 µs |
+| `stop bit` | length of the stop bit in bits (about 1) |
+| `RX probe fast` / `RX probe slow` | when SERIN reads each data bit, in µs after the start edge sent by the Arduino: earliest, mean and latest sample; ideal = middle of the bit. "fast" = characters back to back (fast polls), "slow" = pauses of 4 bits and a little more (polls with the time-out) |
+| `needed change of RB` | change of the RX bit in cycles, not rounded |
 | `fit` | first sample and the time between samples (the RX bit) from the mean values |
 | `worst sample vs middle of bit` | the earliest and latest sample of all bits, in bits; the limit is ±0.5 |
 | `Random data …` | errors in 1020 random bytes, back to back and with random pauses |
 | `Baud margin …` | errors per 255 bytes when the Arduino sends 6 % slower … 6 % faster: the wider the range with 0, the better |
-| `SUGGESTED: TB= RB= RQ=` | constants computed from the measurement, within the ranges of v7.0 |
-| `NOTE: …` | a needed change does not fit into the ranges of v7.0: the code has to change (send the report) |
+| `SUGGESTED: TB= RB= RQ=` | constants computed from the measurement, the nearest allowed values |
+| `wanted, not rounded` | the same constants before rounding to an allowed value |
+| `NOTE: … outside its range` | a wanted value does not fit into the range of v7.1: the code has to change (send the report) |
 
 ### How the measurement works
 
@@ -129,25 +164,27 @@ SEROUT sends from the RX buffer, `RUN 210` switches it back to the TX buffer.
   calibration also works when the TX of the PC-1500 is several per cent off. The header comes
   before the 'U' burst, so the sketch records the times of all its edges (input capture,
   switched between falling and rising edges) and decodes the header after the burst; if the
-  header cannot be read, the measurement goes on with the default constants. (Sketch v1
-  received the PC-1500 at exactly 19200 bps; on the first real PC-1500 its TX bits were 8 %
-  longer, 56.4 µs, and the header could not be read.)
+  header cannot be read, the measurement goes on with the defaults of v7.1. The last byte of
+  the header tells the sketch which SERINOUT runs (1 = v7.0 with program v1.0, 2 = v7.1).
 - **RX:** the Arduino sends "probe" frames: a start bit, then the line stays at space until a
   time τ and goes back to mark. Each sample of SERIN before τ reads 0, each sample after τ
   reads 1, so the received byte (0xFF shifted left by the number of early samples) shows which
   samples came before τ. τ runs in 1 µs steps, four times, from 1 to 9 bits with frames back
-  to back and from 1 to 9.5 bits with pauses (for samples that come late). The PC-1500 echoes
-  every block with SEROUT.
+  to back and from 1 to 9.5 bits with pauses (for samples that come late). The pauses are 4 bits
+  plus 0…64 µs, different for each probe, so that the start edges fall on all phases of the
+  polling loop of SERIN (it polls every 25 µs). The PC-1500 echoes every block with SEROUT.
 - **Error tests:** random data back to back, with pauses of 0–6 bits, and at baud rates from
   −6 % to +6 %.
 - The times are measured with the clock of the UNO. Its ceramic resonator may be off by up to
   about 0.5 %, so the result is checked once more with a crystal-controlled device (for example
   a USB-UART cable at 19200 bps and the RX/TX test of the installer, `RUN 530`).
 
-The calibration method was tested in the simulator as a whole (probe frames, echo, the
-analysis code of the sketch): with a model of the PC-1500 whose `BII` is 0.5 cycles slower than
-MAME and whose clock is 0.3 % fast, the defaults received without errors only from 0 % to +6 %
-(sender baud rate); the report suggested RB = 67 and RQ = 16, and with them the range became
-−3 % … +4 % back to back and −2 % … +3 % with pauses. With 3 extra cycles per port instruction
-and a clock 0.4 % slow, the TX bit came out 2.3 % long; the suggestion TB = 64 brought it to
-−0.6 %.
+The calibration was tested in the simulator as a whole (calibration program in a BASIC
+interpreter, SEROUT/SERIN v7.1 in the LH5801 simulator, probe frames, echo, the analysis code
+of the sketch) with the three PC-1500 models fitted to the first report. Starting from the
+defaults, the suggestion was TB = 61, RB = 64, RQ = 20 for two of the models and TB = 62,
+RB = 66, RQ = 16 for the third; a second calibration with the suggested constants gave the same
+suggestion for the first two and RB = 65, RQ = 20 for the third. With the suggested constants
+the error-free range was about −3 % … +3 % (sender baud rate) back to back and with pauses.
+The same simulation of v7.0 with RB = 70 and RQ = 15 lost the fast probes, as the real PC-1500
+did.

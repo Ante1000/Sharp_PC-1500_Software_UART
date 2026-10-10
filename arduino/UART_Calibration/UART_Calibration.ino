@@ -1,5 +1,5 @@
 /*
-  UART_Calibration.ino - calibration of SERIN/SEROUT v7.0 (19200 bps) on a
+  UART_Calibration.ino - calibration of SERIN/SEROUT v7.1 (19200 bps) on a
   Sharp PC-1500(A) with an Arduino UNO. The LCD Keypad Shield is optional
   (it only shows the progress).
 
@@ -9,31 +9,38 @@
     PC-1500 PB2 (RX)  pin 27    --[470]--  A4
     PC-1500 GND       pin 52-55 --------  GND
     optional: 4.7 kOhm from A5 to 5 V (faster rising edges with the diode)
-  The PC-1500 must be out of the CE-150. Install SERINOUT v7.0 with normal
-  polarity (INVERSION = NO) and RX port PB2.
+  The PC-1500 must be out of the CE-150. The PC-1500 program
+  pc1500_uart19200_calibration-v1.1.txt installs SERINOUT v7.1 itself (normal
+  polarity, RX port PB2). The older program v1.0 (SERINOUT v7.0, in the git
+  history of this branch) also works: the header tells the sketch which
+  version runs.
 
   Use:
     1. Upload this sketch, open the serial monitor at 115200 bps.
-    2. On the PC-1500 run pc1500_uart19200_calibration-v1.0.txt.
+    2. On the PC-1500 run pc1500_uart19200_calibration-v1.1.txt.
     3. Wait until the report is printed (less than a minute), copy it from the
-       serial monitor and send it. Run the PC-1500 program again after a
-       new installation to test new constants.
+       serial monitor and send it. Run the PC-1500 program again with new
+       constants (NEW TIMING = 1) to test them.
 
   What it measures:
     - TX: the PC-1500 sends 64 x 'U' (0x55). The analog comparator (bandgap
       1.1 V against A5) gives every falling edge to the input capture of
       Timer1 (62.5 ns resolution); falling-to-falling intervals inside a
-      frame are 2 bits, across frames bit 7 + the stop bit. Everything the
+      frame are 2 bits, across frames bit 7 + the stop bit; the report
+      gives the mean of each of these 5 intervals. Everything the
       PC-1500 sends is then received with this measured bit length, so the
       calibration also works when its TX is several per cent off. The
-      header ("CAL", TB, RB, RQ) comes before the 'U' burst: the times of
-      its edges are recorded (input capture) and decoded after the burst.
+      header ("CAL", TB, RB, RQ, version) comes before the 'U' burst: the
+      times of its edges are recorded (input capture) and decoded after the
+      burst.
     - RX sample points: the Arduino sends probe frames: start bit, then the
       line stays at space until TAU and goes back to mark. The byte that the
       PC-1500 receives (and echoes) shows which of its 8 samples came before
       TAU. TAU runs in 1 us steps, 4 times, over 1..9 bits with frames back
       to back ("fast": the fast polls of SERIN find the start bit) and over
-      1..9.5 bits with 4-bit pauses ("slow": the polls with the time-out).
+      1..9.5 bits with pauses of 4 bits + 0..64 us ("slow": the polls with
+      the time-out; the varying part spreads the start edges over the whole
+      polling period of SERIN).
     - Random data back to back and with random pauses, and the error count
       at baud rates from -6 % to +6 %.
   The PC-1500 echoes every block with SEROUT, so its TX is checked too.
@@ -44,6 +51,9 @@
 #include <math.h>
 
 enum Kind : uint8_t { PROBE, DATA };   // frames of a block: probes or data
+struct Range {                         // allowed values of a timing constant:
+  int8_t lone, lo, hi;                 // lone (or -1 = none), then lo..hi
+};
 
 // ==== analysis begin: constants and statistics (no hardware access; the
 // ==== same code is compiled on a PC for tests)
@@ -136,12 +146,18 @@ struct ProbeStats {
 struct TxStats {
   uint32_t inSum, bdSum;     // falling-to-falling intervals inside a 'U' frame (2 bits) / across frames
   uint16_t inN, bdN, inMin, inMax, bdMin, bdMax;
+  uint32_t posSum[5];        // per position: 0 = bit 7 + stop, 1 = start + bit 0, 2 = bits 1+2,
+  uint16_t posN[5];          // 3 = bits 3+4, 4 = bits 5+6
 
   void reset() {
     inSum = bdSum = 0;
     inN = bdN = 0;
     inMin = bdMin = 0xFFFF;
     inMax = bdMax = 0;
+    for (uint8_t i = 0; i < 5; i++) {
+      posSum[i] = 0;
+      posN[i] = 0;
+    }
   }
   void addIn(uint16_t d) {
     inSum += d; inN++;
@@ -153,6 +169,14 @@ struct TxStats {
     if (d < bdMin) bdMin = d;
     if (d > bdMax) bdMax = d;
   }
+  // interval i of the burst (i = 1.. after the first falling edge)
+  void add(uint16_t i, uint16_t d) {
+    if (i % 5 == 0) addBd(d);
+    else addIn(d);
+    posSum[i % 5] += d;
+    posN[i % 5]++;
+  }
+  float posUs(uint8_t p) const { return posN[p] ? (float)posSum[p] / posN[p] * TICK_US : 0; }
   bool valid() const { return inN >= 100 && bdN >= 20; }
   float bitUs() const { return (float)inSum / inN * TICK_US / 2; }
   // the interval across frames is bit 7 + the stop bit
@@ -161,24 +185,32 @@ struct TxStats {
 
 int cyclesOf(float us) { return (int)floorf(us / CYCLE_US + 0.5f); }
 
-// ---- needed change in LH5801 cycles (not rounded, not limited to the v7.0 ranges)
+// ---- needed change in LH5801 cycles (not rounded, not limited to the ranges)
 float neededCycles(float measuredUs, float targetUs) { return (targetUs - measuredUs) / CYCLE_US; }
 
-// ---- suggested constants (installer v7.0: TB 63..67, RB 63..71, RQ 8 or 12..20)
+// SERINOUT v7.0 (PC-1500 program v1.0, header version 1)
+const Range TB_V70 = {-1, 63, 67}, RB_V7 = {-1, 63, 71}, RQ_V70 = {8, 12, 20};
+// SERINOUT v7.1 (PC-1500 program v1.1, header version 2)
+const Range TB_V71 = {58, 60, 65}, RQ_V71 = {16, 20, 28};
+
 int clampInt(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
-int suggestTB(int tb, float bitUs) {
-  return clampInt(tb + cyclesOf(BIT_US - bitUs), 63, 67);
+// allowed value nearest to x (cycles, not rounded)
+int nearestIn(const Range &r, float x) {
+  int v = clampInt((int)floorf(x + 0.5f), r.lo, r.hi);
+  if (r.lone >= 0 && fabsf(x - r.lone) < fabsf(x - v)) v = r.lone;
+  return v;
 }
 
-int suggestRB(int rb, float periodUs) {
-  return clampInt(rb + cyclesOf(BIT_US - periodUs), 63, 71);
+// x is more than half a cycle outside the range: the code has to change
+bool outside(const Range &r, float x) {
+  float lo = r.lone >= 0 ? r.lone : r.lo;
+  return x < lo - 0.5f || x > r.hi + 0.5f;
 }
 
-int snapRQ(int rq) {
-  if (rq <= 10) return 8;
-  return clampInt(rq, 12, 20);
-}
+// ---- suggested constants: wanted value (not rounded) and nearest allowed one
+float wantTB(int tb, float bitUs) { return tb + neededCycles(bitUs, BIT_US); }
+float wantRB(int rb, float periodUs) { return rb + neededCycles(periodUs, BIT_US); }
 
 // Change of RB moves sample k by (k+1)*dRB cycles. RQ moves all samples:
 // choose it so that the earliest and the latest sample of all bits (both
@@ -206,12 +238,12 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);   // RS, E, D4, D5, D6, D7 (LCD Keypad Shie
 #define TX_SPACE() (PORTC &= ~_BV(4))   // space (low)
 #define LINE_LOW() (ACSR & _BV(ACO))    // A5 (PC-1500 PC7) below 1.1 V
 
-const uint8_t SKETCH_VERSION = 3;
+const uint8_t SKETCH_VERSION = 4;
 bool hdrGuess;                          // header not read: defaults assumed
 uint8_t buf[256];                       // echo of one block / edge times of the header
 uint32_t pcBitQ8 = BIT_Q8;              // TX bit of the PC-1500 as measured (ticks * 256)
 uint32_t rng;
-uint8_t hdr[7];                         // "CAL", TB, RB, RQ, version
+uint8_t hdr[7];                         // "CAL", TB, RB, RQ, version (1 = v7.0, 2 = v7.1)
 ProbeStats probe[2];                    // 0 = fast (back to back), 1 = slow (pauses)
 TxStats txs;
 bool txOk;
@@ -287,6 +319,9 @@ bool rxByte(uint8_t *out, uint32_t timeoutMs) {
   return true;
 }
 
+// 0..1023 ticks (0..64 us), a fixed scramble of the probe number
+uint16_t probeJitter(uint16_t idx) { return (uint16_t)(idx * 40503U) >> 6; }
+
 uint8_t rnd8() {
   rng ^= rng << 13;
   rng ^= rng >> 17;
@@ -299,7 +334,9 @@ uint8_t rnd8() {
 // Sends n frames and receives the echo; returns the number of bytes echoed,
 // or -1 if the PC-1500 did not send "R" (ready).
 // PROBE: frame i of the block is probe number first+i; DATA: random bytes
-// from seed. gapBits: pause after each frame (0..6 bits, 7 = varying 0..6).
+// from seed. gapBits: pause after each frame (0..6 bits, 7 = varying 0..6);
+// probes with a pause get 0..64 us more (from the probe number), so that
+// their start edges fall on all phases of the polling loop of SERIN.
 int16_t block(Kind kind, uint16_t first, uint16_t n, uint32_t seed, uint8_t gapBits, int8_t pct,
               uint16_t ntau) {
   uint8_t r;
@@ -338,6 +375,7 @@ int16_t block(Kind kind, uint16_t first, uint16_t n, uint32_t seed, uint8_t gapB
     }
     uint8_t gap = gapBits == 7 ? (uint8_t)((i * 5 + (i >> 3)) % 7) : gapBits;   // (not from rnd8)
     vt += frameTicks + (uint32_t)gap * ((bitQ8 + 128) >> 8);
+    if (kind == PROBE && gapBits) vt += probeJitter(first + i);
   }
   waitUntil(base + (uint16_t)vt);
   // echo: the first byte comes after SERIN returns (at once after 255 bytes,
@@ -507,8 +545,7 @@ void measureTx() {
     if (!waitFall(&t, 5)) break;
     uint16_t d = t - prev;
     prev = t;
-    if (i % 5 == 0) txs.addBd(d);
-    else txs.addIn(d);
+    txs.add(i, d);
   }
   sei();
   txOk = txOk && txs.valid();
@@ -563,13 +600,14 @@ void printProbe(uint8_t mode) {
   Serial.println(F(" bits (limit +-0.50)"));
 }
 
+bool isV70() { return hdr[6] == 1; }   // PC-1500 program v1.0 with SERINOUT v7.0
+
 void report() {
   Serial.println();
-  Serial.println(F("=== PC-1500 SERINOUT v7.0 19200 calibration report ==="));
+  Serial.println(F("=== PC-1500 SERINOUT 19200 calibration report ==="));
   Serial.print(F("sketch v"));
   Serial.print(SKETCH_VERSION);
-  Serial.print(F(", PC-1500 program v"));
-  Serial.print(hdr[6]);
+  Serial.print(isV70() ? F(", SERINOUT v7.0 (program v1.0)") : F(", SERINOUT v7.1 (program v1.1)"));
   Serial.print(hdrGuess ? F(", header not read, assumed TB=") : F(", installed TB="));
   Serial.print(hdr[3]);
   Serial.print(F(" RB="));
@@ -588,6 +626,17 @@ void report() {
     Serial.print(F(" us, stop bit "));
     printUs(txs.stopBits(), 1);
     Serial.println(F(" bits"));
+    Serial.print(F("   2-bit intervals (us): start+b0 "));
+    printUs(txs.posUs(1), 1);
+    Serial.print(F(", b1+b2 "));
+    printUs(txs.posUs(2), 1);
+    Serial.print(F(", b3+b4 "));
+    printUs(txs.posUs(3), 1);
+    Serial.print(F(", b5+b6 "));
+    printUs(txs.posUs(4), 1);
+    Serial.print(F(", b7+stop "));
+    printUs(txs.posUs(0), 1);
+    Serial.println();
     Serial.print(F("   = "));
     printUs(txs.bitUs() / CYCLE_US, 1);
     Serial.print(F(" cycles at 1.3 MHz for TB="));
@@ -621,8 +670,11 @@ void report() {
     Serial.println();
   }
   // suggestions
+  const Range &rTB = isV70() ? TB_V70 : TB_V71;
+  const Range &rRQ = isV70() ? RQ_V70 : RQ_V71;
   int tb = hdr[3], rb = hdr[4], rq = hdr[5];
-  int ntb = txOk ? suggestTB(tb, txs.bitUs()) : tb;
+  float xtb = txOk ? wantTB(tb, txs.bitUs()) : tb, xrb = rb, xrq = rq;
+  int ntb = nearestIn(rTB, xtb);
   int nrb = rb, nrq = rq;
   if (probe[0].valid() || probe[1].valid()) {
     float f, p, sp = 0;
@@ -634,10 +686,12 @@ void report() {
         c++;
       }
     }
-    nrb = suggestRB(rb, sp / c);
+    xrb = wantRB(rb, sp / c);
+    nrb = nearestIn(RB_V7, xrb);
     float shift, early, late;
     centerRQ(probe, 2, nrb - rb, shift, early, late);
-    nrq = snapRQ(rq + cyclesOf(shift));
+    xrq = rq + shift / CYCLE_US;
+    nrq = nearestIn(rRQ, xrq);
     float moved = (nrq - rq) * CYCLE_US;
     Serial.print(F("Expected with the suggestion: worst sample "));
     printUs((early + moved) / BIT_US, 1);
@@ -658,10 +712,16 @@ void report() {
   Serial.print(F(" RQ="));
   Serial.print(rq);
   Serial.println(F(")"));
-  if (txOk && (ntb != tb + (int)floorf(neededCycles(txs.bitUs(), BIT_US) + 0.5f)))
-    Serial.println(F("NOTE: the TX change is outside the range of v7.0 (TB 63..67): code change needed"));
-  if (nrb == 63 || nrb == 71 || nrq == 8 || nrq == 20)
-    Serial.println(F("NOTE: an RX value is at the end of its range: code change may be needed"));
+  Serial.print(F("   wanted, not rounded: TB="));
+  printUs(xtb, 1);
+  Serial.print(F(" RB="));
+  printUs(xrb, 1);
+  Serial.print(F(" RQ="));
+  printUs(xrq, 1);
+  Serial.println();
+  if (outside(rTB, xtb)) Serial.println(F("NOTE: TB is outside its range: code change needed"));
+  if (outside(RB_V7, xrb)) Serial.println(F("NOTE: RB is outside its range: code change needed"));
+  if (outside(rRQ, xrq)) Serial.println(F("NOTE: RQ is outside its range: code change needed"));
   Serial.println(F("=== end of report: please copy everything from the first === line ==="));
 }
 
@@ -681,7 +741,7 @@ void setup() {
   TCCR1C = 0;
   TIMSK1 = 0;
   delay(10);
-  Serial.print(F("PC-1500 SERINOUT v7.0 (19200 bps) calibration, Arduino sketch v"));
+  Serial.print(F("PC-1500 SERINOUT v7.1 (19200 bps) calibration, Arduino sketch v"));
   Serial.println(SKETCH_VERSION);
 }
 
@@ -712,7 +772,7 @@ void loop() {
   } else {
     Serial.println(F("No 'U' burst after the header: the bit length could not be measured."));
   }
-  hdrGuess = n < 7 || hdr[0] != 'C' || hdr[1] != 'A' || hdr[2] != 'L';
+  hdrGuess = n < 7 || hdr[0] != 'C' || hdr[1] != 'A' || hdr[2] != 'L' || hdr[6] < 1 || hdr[6] > 2;
   if (hdrGuess) {
     Serial.print(F("Header not understood, received:"));
     for (uint8_t i = 0; i < n; i++) {
@@ -721,15 +781,15 @@ void loop() {
     }
     Serial.println();
     if (!txOk) {
-      Serial.println(F("No TX measurement either - check the wiring and that SERINOUT v7.0 is installed"));
-      Serial.println(F("with normal polarity. (If the PC-1500 program still runs: BREAK, then RUN 210.)"));
+      Serial.println(F("No TX measurement either - check the wiring and that the PC-1500 runs the"));
+      Serial.println(F("calibration program v1.1. (If it still runs: BREAK, then RUN 210.)"));
       return;
     }
-    Serial.println(F("Going on with the measurement; TB=66 RB=66 RQ=12 assumed."));
-    hdr[3] = 66;
-    hdr[4] = 66;
-    hdr[5] = 12;
-    hdr[6] = 0;
+    Serial.println(F("Going on with the measurement; SERINOUT v7.1 with TB=62 RB=64 RQ=22 assumed."));
+    hdr[3] = 62;
+    hdr[4] = 64;
+    hdr[5] = 22;
+    hdr[6] = 2;
   }
   Serial.print(F("PC-1500: TB="));
   Serial.print(hdr[3]);
