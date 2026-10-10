@@ -2,8 +2,8 @@ SERIN / SEROUT v6.2 and v7.1 - LH5801 assembler sources for the Sharp PC-1500(A)
 
 serout_v6.2.asm / .lst   SEROUT (transmit), 84 bytes, loaded at RAM+&0C5 (&40C5 on a PC-1500A)
 serin_v6.2.asm  / .lst   SERIN (receive), 118 bytes, loaded at RAM+&130 (&4130 on a PC-1500A)
-serout_v7.1.asm / .lst   SEROUT v7.1, 19200 bps only (test version), 82 bytes, at RAM+&0C5
-serin_v7.1.asm  / .lst   SERIN v7.1, 19200 bps only (test version), 162 bytes, at RAM+&130
+serout_v7.1.asm / .lst   SEROUT v7.1, 19200 bps only, 82 bytes, at RAM+&0C5
+serin_v7.1.asm  / .lst   SERIN v7.1, 19200 bps only, 162 bytes, at RAM+&130
                          (installer Basic/pc1500_uart_installer-v7.1_19200.txt; timing pads
                          P1..P3, Q1..Q4, R1..R4 and the branches RS: see CALIBRATION_19200.md)
 

@@ -1,11 +1,14 @@
 # SERINOUT v7.1: 19200 bps, and its calibration with an Arduino UNO
 
-> **Status: test version.** SERINOUT v7.0 was calibrated once on a real PC-1500; the real
-> PC-1500 was slower than the cycle table used for v7.0, by more than the timing ranges of v7.0
-> could correct, so SEROUT and SERIN were changed to **v7.1**. The second calibration (v7.1 on the
-> same PC-1500) received 1020 random bytes without errors, with the sender from 3 % slower to 3 %
-> faster than 19200 bps, and gave the defaults **TB = 61, RB = 65, RQ = 16**. A calibration with
-> these defaults is still to be done (see below).
+> **Status: calibrated on a real PC-1500.** SERINOUT v7.0 was calibrated once on a real
+> PC-1500; the real PC-1500 was slower than the cycle table used for v7.0, by more than the
+> timing ranges of v7.0 could correct, so SEROUT and SERIN were changed to **v7.1**. The second
+> calibration (v7.1 on the same PC-1500) gave the defaults **TB = 61, RB = 65, RQ = 16**, and the
+> third one confirmed them: TX bit +0.13 %, no errors in random data, no errors when the sender
+> is 4 % slower to 3 % faster (characters back to back) or 3 % slower to 2 % faster (with
+> pauses). The times were measured with the ceramic resonator of the Arduino UNO (up to about
+> 0.5 % off); a check with a crystal-controlled device (a USB-UART cable at 19200 bps) is
+> recommended.
 
 SERINOUT v7.1 is used exactly like v6.2: the same `CALL`s, buffers and addresses
 ([README](README.md#commands)), but at **19200 bps only** (8N1, normal or inverted polarity, RX on
@@ -96,6 +99,32 @@ RQ = 17 is not possible with the 4-byte pad (only 16 or 20…28); RQ = 16 puts t
 earlier than wanted and, as computed by the sketch, within −0.26 … +0.22 bit of the middle of the
 bits. The new defaults are therefore **TB = 61, RB = 65, RQ = 16** (installer v7.1 and line 60 of
 the calibration program v1.1).
+
+## The third calibration: the defaults confirmed
+
+Sketch v4 with calibration program v1.1, TB = 61, RB = 65, RQ = 16:
+
+| | measured | |
+|---|---|---|
+| TX bit | 52.15 µs (+0.13 %) | as predicted; needed change of TB −0.09 cycles |
+| TX 2-bit intervals | start+b0 102.51, b1+b2 / b3+b4 / b5+b6 104.90, b7+stop 104.99 µs | as predicted (102.52 / 104.89); stop bit 1.01 bit |
+| RX bit (time between samples) | 51.72 µs back to back, 52.01 µs after pauses (−0.7 / −0.1 %) | |
+| first RX sample (fit) | 79.6 / 77.2 µs (ideal 78.1) | |
+| samples vs middle of bit | −0.17 … +0.16 bit back to back, −0.25 … +0.22 bit after pauses | limit ±0.5 |
+| random data | 0 errors in 510 bytes back to back and 510 bytes with pauses | |
+| baud margin (sender) | 0 errors from −4 % to +3 % back to back, −3 % to +2 % with pauses (7 errors at +3 %) | |
+| suggested | TB = 61, RB = 65, RQ = 16 (= installed) | wanted 60.9, 65.3, 17.1 |
+
+The calibration has converged. The receiver tolerates senders from −3 % to +2 % in all cases,
+more than enough for devices with a crystal or a calibrated oscillator (USB-UART adapters, other
+microcontrollers, a second PC-1500 with SERINOUT v7.1).
+
+The simulator reproduces these margins when a taken `LOP` takes 3.1 cycles more than in MAME's
+table (models A and B of the first report plus this `LOP`): back to back the reception breaks
+down at +4 % because the next start bit then comes before the first fast poll and the error
+adds up from character to character. Starting the fast polls 12 cycles earlier (the two `LDI`
+of the time-out moved behind them) brought +4 % back to back from 219 to 23 errors per 255 in
+the simulator and did not change the margins with pauses, so the code was left as it is.
 
 ## Timing constants
 
