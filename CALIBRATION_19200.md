@@ -90,7 +90,7 @@ sketch also switches on the internal pull-up. The PC-1500 must be out of the CE-
 4. Upload `arduino/UART_Calibration/UART_Calibration.ino` (with `analysis.h` in the same folder)
    to the UNO and open the serial monitor at **115200 bps**.
 5. `RUN` the calibration program on the PC-1500. It shows the installed TB, RB and RQ, asks
-   `NEW TIMING (ENTER=NO,1=YES)` (ENTER the first time) and `ARDUINO READY? ENTER`.
+   `NEW TIMING (1=YES)?` (press ENTER the first time) and `ARDUINO READY? ENTER`.
 6. The PC-1500 sends a header and 64 × 'U', then answers the Arduino block by block
    (`BLOCKS: 10`, `20`, …, less than a minute). About 30 s after the last block it shows
    `END: 44 BLOCKS`. The Arduino prints the report as soon as it has finished.
