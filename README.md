@@ -49,6 +49,7 @@ printer/cassette interface.
 | `Basic/pc1500_uart19200_calibration-v1.1.txt` | PC-1500 program for the 19200 bps calibration with an Arduino UNO (installs SERINOUT v7.1 itself) |
 | `arduino/UART_Calibration/` | Arduino UNO sketch that measures the 19200 bps timing and prints a report |
 | `arduino/UART_Quote/` | Arduino UNO sketch for the quote demo: answers with a sentence from its word lists |
+| `arduino/UART_Quote_Gloom/` | the same demo with gloomy, grotesque little catastrophes from IT, electronics and space |
 | `asm/` | LH5801 assembler sources and listings of SEROUT and SERIN v6.2 and v7.1 (19200 bps) |
 | `wav/SERINOUT.wav` | the installer v6.2 as a tape recording, for `CLOAD` |
 | `wav/link.wav` | the link program as a tape recording, for `CLOAD` |
@@ -157,6 +158,12 @@ recommended with the diode. The LCD Keypad Shield is optional.)
 The word lists (486 subjects, 411 verbs, 1004 objects, about 20 KB in flash; the sketch takes
 about 87 % of the UNO's flash) are in the sketch and can be changed freely: a sentence longer
 than one line is never sent. The serial monitor (115200 bps) shows every question and answer.
+
+`arduino/UART_Quote_Gloom/UART_Quote_Gloom.ino` works with the same PC-1500 program and wiring,
+but its sentences are gloomy and grotesque, from IT, electronics and space, in four patterns:
+`A consultant ate the LPTs.`, `The UART sang in water.`, `Diodes danced gloomily.`,
+`Mournfully the HDD worked.` It has 404 subjects (also plural: `Diodes dance`), 328 verbs,
+133 adverbs, 148 places and 503 objects, and also takes about 87 % of the UNO's flash.
 
 ## Author
 
