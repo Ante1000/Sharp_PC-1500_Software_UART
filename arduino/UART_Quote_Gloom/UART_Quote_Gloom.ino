@@ -243,7 +243,7 @@ const char OBJECTS[] PROGMEM =
   "an email|the spam|a cookie|the cookies|a byte|a nibble|a bit|a pixel|the screensaver|"
   "the wallpaper|the desktop|the trash can|the clipboard|the undo button|a backup tape|"
   "the mainframe|a punch card|the teletype|a dot matrix|the plotter pen|a soldering iron|"
-  "the solder|flux|a breadboard|an LED|the LEDs|a relay|the fuse box|a battery|the batteries|"
+  "the solder|bugs|a breadboard|an LED|the LEDs|a relay|the fuse box|a battery|the batteries|"
   "a transformer|a coil|a magnet|a magnetron|an oscilloscope|a multimeter|the probe|a rocket|"
   "a meteor|stardust|moon dust|a moon rock|a space rock|an alien egg|alien goo|a UFO|"
   "a flying saucer|a wormhole|a nebula|the Milky Way|the galaxy|the universe|the Big Bang|gravity|"
