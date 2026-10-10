@@ -45,8 +45,10 @@ printer/cassette interface.
 | `Basic/pc1500_uart_test-v7.2.txt` | TX/RX tester for every speed (run it after the installer v7.2) |
 | `Basic/pc1500_uart_installer-v6.2.txt` | BASIC installer and TX/RX tester, version 6.2 (1200–9600 bps) |
 | `Basic/pc1500_uart_link-v1.0.txt` | link program for two PC-1500s: demo, send text, receive (1200–9600 bps) |
+| `Basic/pc1500_uart_quote-v1.0.txt` | "quote of the day" demo: asks an Arduino UNO, see [below](#demo-quote-of-the-day-with-an-arduino-uno) |
 | `Basic/pc1500_uart19200_calibration-v1.1.txt` | PC-1500 program for the 19200 bps calibration with an Arduino UNO (installs SERINOUT v7.1 itself) |
 | `arduino/UART_Calibration/` | Arduino UNO sketch that measures the 19200 bps timing and prints a report |
+| `arduino/UART_Quote/` | Arduino UNO sketch for the quote demo: answers with a sentence from its word lists |
 | `asm/` | LH5801 assembler sources and listings of SEROUT and SERIN v6.2 and v7.1 (19200 bps) |
 | `wav/SERINOUT.wav` | the installer v6.2 as a tape recording, for `CLOAD` |
 | `wav/link.wav` | the link program as a tape recording, for `CLOAD` |
@@ -129,6 +131,30 @@ configuration; see also [HELP_NEW_memory.md](HELP_NEW_memory.md).
 
 SERIN waits up to about 30 s for the first character and returns to BASIC when no further
 character arrives within about 0.5 s.
+
+## Demo: quote of the day with an Arduino UNO
+
+The PC-1500 asks `What's for today?` (or `tomorrow?`, `yesterday?`) and the Arduino answers with
+a short sentence made from its word lists, at most 26 characters, one line of the display:
+`Luck finds a golden key.`, `A cat will fix the bus.`, `The moon stole hot tea.`
+
+| PC-1500 (60-pin) | In between | Arduino UNO |
+|---|---|---|
+| PC7 (TX), pin 10 | Schottky diode, cathode (stripe) toward PC7, or 1 kΩ | A5 |
+| PB2 (RX), pin 27 | 470 Ω | A4 |
+| GND, pins 52–55 | – | GND |
+
+(The same wiring as for the 19200 bps calibration; a 4.7 kΩ resistor from A5 to 5 V is
+recommended with the diode. The LCD Keypad Shield is optional.)
+
+1. Upload `arduino/UART_Quote/UART_Quote.ino` (19200 bps; another speed: change `BAUD`).
+2. On the PC-1500 run the installer v7.2: speed `5`, RX port PB2, inversion no. Then `NEW`
+   in PRO mode and type in `Basic/pc1500_uart_quote-v1.0.txt`.
+3. `RUN`: choose `1` (today, also ENTER), `2` (tomorrow) or `3` (yesterday); `0` ends.
+
+The word lists (34 subjects, 38 verbs, 40 objects) are at the top of the sketch and can be
+changed freely: a sentence longer than one line is never sent. The serial monitor (115200 bps)
+shows every question and answer.
 
 ## Author
 
