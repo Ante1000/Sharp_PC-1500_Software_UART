@@ -1,6 +1,6 @@
-# SERINOUT v7.1: 19200 bps, and its calibration with an Arduino UNO
+# SEROUT/SERIN v7.1: 19200 bps, and its calibration with an Arduino UNO
 
-> **Status: calibrated on a real PC-1500.** SERINOUT v7.0 was calibrated once on a real
+> **Status: calibrated on a real PC-1500.** SEROUT/SERIN v7.0 was calibrated once on a real
 > PC-1500; the real PC-1500 was slower than the cycle table used for v7.0, by more than the
 > timing ranges of v7.0 could correct, so SEROUT and SERIN were changed to **v7.1**. The second
 > calibration (v7.1 on the same PC-1500) gave the defaults **TB = 61, RB = 65, RQ = 16**, and the
@@ -10,7 +10,7 @@
 > 0.5 % off); a check with a crystal-controlled device (a USB-UART cable at 19200 bps) is
 > recommended.
 
-SERINOUT v7.1 is used exactly like v6.2: the same `CALL`s, buffers and addresses
+SEROUT/SERIN v7.1 is used exactly like v6.2: the same `CALL`s, buffers and addresses
 ([README](README.md#commands)), but at **19200 bps only** (8N1, normal or inverted polarity, RX on
 PB2 or PB0). It moves up to about 1.9 KB/s, twice the 9600 bps of v6.2.
 
@@ -18,10 +18,10 @@ PB2 or PB0). It moves up to about 1.9 KB/s, twice the 9600 bps of v6.2.
 
 | File | Contents |
 |---|---|
-| `Basic/pc1500_uart19200_calibration-v1.1.txt` | PC-1500 calibration program: installs SERINOUT v7.1 itself, talks to the Arduino, can set new timing constants |
+| `Basic/pc1500_uart19200_calibration-v1.1.txt` | PC-1500 calibration program: installs SEROUT/SERIN v7.1 itself, talks to the Arduino, can set new timing constants |
 | `arduino/UART_Calibration/` | Arduino UNO sketch v4 (one file, `UART_Calibration.ino`) that measures the timing and prints the report |
-| `Basic/pc1500_uart_installer-v7.3.txt` | BASIC installer v7.3: all speeds, SERINOUT v7.1 at 19200 bps (speed 5); for use after the calibration (other polarity, PB0) |
-| `Basic/pc1500_uart_test-v7.3.txt` | TX/RX tester for every speed (after the installer: `NEW`, then this program) |
+| `Basic/uart7.3.txt` | UART7.3: all speeds, SEROUT/SERIN v7.1 at 19200 bps (speed 5); for use after the calibration (other polarity, PB0) |
+| `Basic/pc1500_uart_test-v7.3.txt` | TEST7.3: TX/RX test for every speed (after UART7.3: `NEW`, then this program) |
 | `asm/serout_v7.1.asm`, `asm/serin_v7.1.asm` | LH5801 sources (and `.lst` listings) of SEROUT and SERIN v7.1 |
 
 ## Why 19200 needs new code
@@ -48,7 +48,7 @@ cannot go faster than about 16 000 bps. v7.x has new loops without a delay loop:
 
 38400 bps is not possible: a bit would have only 34 cycles.
 
-## The first calibration (SERINOUT v7.0) and what changed in v7.1
+## The first calibration (SEROUT/SERIN v7.0) and what changed in v7.1
 
 v7.0 was written with MAME's cycle table plus 1.9 extra cycles per `ORI`/`ANI` on a port (measured
 with the I2C master). The first report from a real PC-1500 (sketch v3) showed:
@@ -75,7 +75,7 @@ The first defaults came from models of the PC-1500 fitted to the first report (e
 the port writes, `SHR`, `ROR`, `BII`, `NOP` in different proportions). The second calibration
 showed where the models were wrong (next section).
 
-## The second calibration (SERINOUT v7.1)
+## The second calibration (SEROUT/SERIN v7.1)
 
 Sketch v4 with calibration program v1.1, TB = 62, RB = 64, RQ = 22:
 
@@ -103,7 +103,7 @@ changed.
 
 RQ = 17 is not possible with the 4-byte pad (only 16 or 20…28); RQ = 16 puts the samples 1 cycle
 earlier than wanted and, as computed by the sketch, within −0.26 … +0.22 bit of the middle of the
-bits. The new defaults are therefore **TB = 61, RB = 65, RQ = 16** (installer v7.3 and line 60 of
+bits. The new defaults are therefore **TB = 61, RB = 65, RQ = 16** (UART7.3 and line 60 of
 the calibration program v1.1).
 
 ## The third calibration: the defaults confirmed
@@ -123,7 +123,7 @@ Sketch v4 with calibration program v1.1, TB = 61, RB = 65, RQ = 16:
 
 The calibration has converged. The receiver tolerates senders from −3 % to +2 % in all cases,
 more than enough for devices with a crystal or a calibrated oscillator (USB-UART adapters, other
-microcontrollers, a second PC-1500 with SERINOUT v7.1).
+microcontrollers, a second PC-1500 with SEROUT/SERIN v7.1).
 
 The simulator reproduces these margins with models A and B of the first report: back to back
 the reception breaks down at +4 % because the next start bit then comes before the first fast poll and the error
@@ -141,7 +141,7 @@ the simulator and did not change the margins with pauses, so the code was left a
 
 The calibration program uses the defaults the first time and keeps the values of an installed
 v7.1 after that. Answer `1` at `NEW TIMING (1=YES)?` to type other values. The values are stored
-at RAM+&1FC…&1FE. The installer v7.3 (speed 5) uses the defaults when you press ENTER at
+at RAM+&1FC…&1FE. UART7.3 (speed 5) uses the defaults when you press ENTER at
 `TIMING (ENTER=STD,1=SET)`; answer `1` to type the calibrated values.
 
 ## Calibration
@@ -166,8 +166,8 @@ CE-150.
 
 1. On the PC-1500, in PRO mode: `NEW0`, then `NEW &4400` (other RAM configurations:
    [HELP_NEW_memory.md](HELP_NEW_memory.md)).
-2. Type in `Basic/pc1500_uart19200_calibration-v1.1.txt`. The installer is not needed: the
-   calibration program installs SERINOUT v7.1 (normal polarity, RX on PB2) every time it runs.
+2. Type in `Basic/pc1500_uart19200_calibration-v1.1.txt`. UART7.3 is not needed: the
+   calibration program installs SEROUT/SERIN v7.1 (normal polarity, RX on PB2) every time it runs.
 3. Upload `arduino/UART_Calibration/UART_Calibration.ino` (sketch v4) to the UNO and open the
    serial monitor at **115200 bps**.
 4. `RUN` the calibration program on the PC-1500. It shows TB, RB and RQ, asks
@@ -177,13 +177,13 @@ CE-150.
    (`BLOCKS: 10`, `20`, …, less than a minute). About 30 s after the last block it shows
    `END: 44 BLOCKS`. The Arduino prints the report as soon as it has finished.
 6. Copy the report from the serial monitor, from the line
-   `=== PC-1500 SERINOUT 19200 calibration report ===` to the line `=== end of report ...`,
+   `=== PC-1500 UART 19200 calibration report ===` to the line `=== end of report ...`,
    and send it.
 7. To try other constants (for example the `SUGGESTED` ones), `RUN` the calibration program
-   again and answer `1` at `NEW TIMING`; it installs SERINOUT v7.1 with them and measures again.
+   again and answer `1` at `NEW TIMING`; it installs SEROUT/SERIN v7.1 with them and measures again.
 
-After the calibration SERINOUT v7.1 stays installed with the last constants (normal polarity,
-PB2) and can be used at once. For inverted polarity or PB0, run the installer v7.3 (speed 5) and type the
+After the calibration SEROUT/SERIN v7.1 stays installed with the last constants (normal polarity,
+PB2) and can be used at once. For inverted polarity or PB0, run UART7.3 (speed 5) and type the
 calibrated constants at `TIMING`.
 
 If the program is stopped with BREAK during the echo loop, enter `RUN 210`: during the loop
@@ -216,7 +216,7 @@ SEROUT sends from the RX buffer, `RUN 210` switches it back to the TX buffer.
   before the 'U' burst, so the sketch records the times of all its edges (input capture,
   switched between falling and rising edges) and decodes the header after the burst; if the
   header cannot be read, the measurement goes on with TB = 62, RB = 64, RQ = 22 assumed. The last byte of
-  the header tells the sketch which SERINOUT runs (1 = v7.0 with program v1.0, 2 = v7.1).
+  the header tells the sketch which version of SEROUT/SERIN runs (1 = v7.0 with program v1.0, 2 = v7.1).
 - **RX:** the Arduino sends "probe" frames: a start bit, then the line stays at space until a
   time τ and goes back to mark. Each sample of SERIN before τ reads 0, each sample after τ
   reads 1, so the received byte (0xFF shifted left by the number of early samples) shows which

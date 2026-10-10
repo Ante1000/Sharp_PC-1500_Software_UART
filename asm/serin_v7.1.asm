@@ -1,7 +1,7 @@
 ; =====================================================================
 ; SERIN v7.1 - software UART receiver 8N1 for the Sharp PC-1500(A),
 ; 19200 bps, input PB0 (pin 9) or PB2 (CMT-IN, pin 27), normal polarity
-; (TTL: idle = high) or inverted (idle = low) - chosen in the installer.
+; (TTL: idle = high) or inverted (idle = low) - chosen in UART7.3.
 ; CPU LH5801 @ 1.3 MHz.
 ;
 ; Call from BASIC (as in v6.x):
@@ -38,12 +38,12 @@
 ; - DEC sets C when the value was not 0 before, and BII does not change C,
 ;   so polls can sit between DEC and the BCS that tests it: no long gaps.
 ; Branches that depend on the line are pseudo instructions whose opcode
-; the installer writes (BZR and BZS take the same time):
+; UART7.3 writes (BZR and BZS take the same time):
 ;   BMK+ = FM  forward if mark   (normal BZR+ &89 / inverted BZS+ &8B)
 ;   BSP+ = FS  forward if space  (normal BZS+ &8B / inverted BZR+ &89)
 ;   BMK- = RM  back if mark      (normal BZR- &99 / inverted BZS- &9B)
 ;   BSP- = RS  back if space     (normal BZS- &9B / inverted BZR- &99)
-; Other BASIC variables written by the installer:
+; Other BASIC variables written by UART7.3:
 ;   DB = &FE (PB0) / &FB (PB2)   mask for the direction register DDB
 ;   BM = 1 (PB0) / 4 (PB2)       bit mask of the input in port B (&F00F)
 ;   Q1..Q4, R1..R4               timing pads (sample position, bit length)

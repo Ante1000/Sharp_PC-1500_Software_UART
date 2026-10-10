@@ -1,6 +1,6 @@
 ; =====================================================================
 ; SEROUT v7.1 - software UART transmitter 8N1 for the Sharp PC-1500(A),
-; 19200 bps, normal or inverted polarity (chosen in the installer).
+; 19200 bps, normal or inverted polarity (chosen in UART7.3).
 ; CPU LH5801 @ 1.3 MHz, output PC7 (&F008 bit 7).
 ;   normal (TTL):  idle and bit "1" = high, start bit and "0" = low
 ;   inverted:      idle and bit "1" = low,  start bit and "0" = high

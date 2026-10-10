@@ -10,8 +10,8 @@
     PC-1500 GND       pin 52-55 --------  GND
     optional: 4.7 kOhm from A5 to 5 V (faster rising edges with the diode)
   The PC-1500 must be out of the CE-150. The PC-1500 program
-  pc1500_uart19200_calibration-v1.1.txt installs SERINOUT v7.1 itself (normal
-  polarity, RX port PB2). The older program v1.0 (SERINOUT v7.0, in the git
+  pc1500_uart19200_calibration-v1.1.txt installs SERIN/SEROUT v7.1 itself (normal
+  polarity, RX port PB2). The older program v1.0 (SERIN/SEROUT v7.0, in the git
   history of this branch) also works: the header tells the sketch which
   version runs.
 
@@ -188,9 +188,9 @@ int cyclesOf(float us) { return (int)floorf(us / CYCLE_US + 0.5f); }
 // ---- needed change in LH5801 cycles (not rounded, not limited to the ranges)
 float neededCycles(float measuredUs, float targetUs) { return (targetUs - measuredUs) / CYCLE_US; }
 
-// SERINOUT v7.0 (PC-1500 program v1.0, header version 1)
+// SERIN/SEROUT v7.0 (PC-1500 program v1.0, header version 1)
 const Range TB_V70 = {-1, 63, 67}, RB_V7 = {-1, 63, 71}, RQ_V70 = {8, 12, 20};
-// SERINOUT v7.1 (PC-1500 program v1.1, header version 2)
+// SERIN/SEROUT v7.1 (PC-1500 program v1.1, header version 2)
 const Range TB_V71 = {58, 60, 65}, RQ_V71 = {16, 20, 28};
 
 int clampInt(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
@@ -600,14 +600,14 @@ void printProbe(uint8_t mode) {
   Serial.println(F(" bits (limit +-0.50)"));
 }
 
-bool isV70() { return hdr[6] == 1; }   // PC-1500 program v1.0 with SERINOUT v7.0
+bool isV70() { return hdr[6] == 1; }   // PC-1500 program v1.0 with SERIN/SEROUT v7.0
 
 void report() {
   Serial.println();
-  Serial.println(F("=== PC-1500 SERINOUT 19200 calibration report ==="));
+  Serial.println(F("=== PC-1500 UART 19200 calibration report ==="));
   Serial.print(F("sketch v"));
   Serial.print(SKETCH_VERSION);
-  Serial.print(isV70() ? F(", SERINOUT v7.0 (program v1.0)") : F(", SERINOUT v7.1 (program v1.1)"));
+  Serial.print(isV70() ? F(", SERIN/SEROUT v7.0 (program v1.0)") : F(", SERIN/SEROUT v7.1 (program v1.1)"));
   Serial.print(hdrGuess ? F(", header not read, assumed TB=") : F(", installed TB="));
   Serial.print(hdr[3]);
   Serial.print(F(" RB="));
@@ -741,7 +741,7 @@ void setup() {
   TCCR1C = 0;
   TIMSK1 = 0;
   delay(10);
-  Serial.print(F("PC-1500 SERINOUT v7.1 (19200 bps) calibration, Arduino sketch v"));
+  Serial.print(F("PC-1500 SERIN/SEROUT v7.1 (19200 bps) calibration, Arduino sketch v"));
   Serial.println(SKETCH_VERSION);
 }
 
@@ -785,7 +785,7 @@ void loop() {
       Serial.println(F("calibration program v1.1. (If it still runs: BREAK, then RUN 210.)"));
       return;
     }
-    Serial.println(F("Going on with the measurement; SERINOUT v7.1 with TB=62 RB=64 RQ=22 assumed."));
+    Serial.println(F("Going on with the measurement; SERIN/SEROUT v7.1 with TB=62 RB=64 RQ=22 assumed."));
     hdr[3] = 62;
     hdr[4] = 64;
     hdr[5] = 22;
