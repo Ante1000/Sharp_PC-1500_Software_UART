@@ -42,7 +42,7 @@ enum Tense : uint8_t { PRESENT, FUTURE, PAST, UNKNOWN };
 
 // Word lists in flash (486 subjects, 411 verbs, 1004 objects, about 20 KB),
 // items separated by '|'. Add or change words as you like: the sketch takes
-// about 28 KB of the 32 KB flash of the UNO, so about 4 KB are left - keep
+// about 28 KB of the 32 KB flash of the UNO, so jabout 4 KB are left - keep
 // some of it free. A sentence longer than LINE_LEN is never sent, another one
 // is chosen.
 // Subjects: singular (the verb gets -s), first letter capital, up to 14 characters.
@@ -62,7 +62,7 @@ const char SUBJECTS[] PROGMEM =
   "A hermit|Jesus|A dwarf|An elf|A troll|A vampire|A zombie|A mummy|A ninja|A cowboy|A sheriff|"
   "A detective|A janitor|A gardener|A hacker|A gamer|A nerd|A genius|A toddler|A teenager|"
   "A grandpa|A granny|A magician|A juggler|An acrobat|A mime|A surfer|A skier|A golfer|A boxer|"
-  "A jockey|A referee|Jesius|A captain|A sergeant|A general|A diplomat|A mayor|A senator|A tycoon|"
+  "A jockey|A referee|Jesus|A captain|A sergeant|A general|A diplomat|A mayor|A senator|A tycoon|"
   "A millionaire|A beggar|A thief|A burglar|A smuggler|A bandit|A fisherman|A hunter|A ranger|"
   "A miner|A scientist|An inventor|An astronaut|An alien|A UFO|A mermaid|A unicorn|A dragon|"
   "A phoenix|A yeti|A goblin|A fairy|A genie|A pixie|A gnome|An ogre|A centaur|A cyclops|"
