@@ -127,9 +127,11 @@ SEROUT sends from the RX buffer, `RUN 210` switches it back to the TX buffer.
   the falling edges are exactly 2 bits apart. Everything else the PC-1500 sends (the header, the
   "R" before each block, the echoes) is received with this measured bit length, so the
   calibration also works when the TX of the PC-1500 is several per cent off. The header comes
-  before the 'U' burst, so the sketch records the line every 4 µs and decodes the header after
-  the burst. (Sketch v1 received the PC-1500 at exactly 19200 bps; on the first real PC-1500
-  its TX bits were about 6 % longer, and the header could not be read.)
+  before the 'U' burst, so the sketch records the times of all its edges (input capture,
+  switched between falling and rising edges) and decodes the header after the burst; if the
+  header cannot be read, the measurement goes on with the default constants. (Sketch v1
+  received the PC-1500 at exactly 19200 bps; on the first real PC-1500 its TX bits were 8 %
+  longer, 56.4 µs, and the header could not be read.)
 - **RX:** the Arduino sends "probe" frames: a start bit, then the line stays at space until a
   time τ and goes back to mark. Each sample of SERIN before τ reads 0, each sample after τ
   reads 1, so the received byte (0xFF shifted left by the number of early samples) shows which

@@ -26,8 +26,8 @@
       frame are 2 bits, across frames bit 7 + the stop bit. Everything the
       PC-1500 sends is then received with this measured bit length, so the
       calibration also works when its TX is several per cent off. The
-      header ("CAL", TB, RB, RQ) comes before the 'U' burst: the line is
-      recorded every 4 us and decoded after the burst.
+      header ("CAL", TB, RB, RQ) comes before the 'U' burst: the times of
+      its edges are recorded (input capture) and decoded after the burst.
     - RX sample points: the Arduino sends probe frames: start bit, then the
       line stays at space until TAU and goes back to mark. The byte that the
       PC-1500 receives (and echoes) shows which of its 8 samples came before
@@ -206,8 +206,9 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);   // RS, E, D4, D5, D6, D7 (LCD Keypad Shie
 #define TX_SPACE() (PORTC &= ~_BV(4))   // space (low)
 #define LINE_LOW() (ACSR & _BV(ACO))    // A5 (PC-1500 PC7) below 1.1 V
 
-const uint8_t SKETCH_VERSION = 2;
-uint8_t buf[256];                       // echo of one block / samples of the header
+const uint8_t SKETCH_VERSION = 3;
+bool hdrGuess;                          // header not read: defaults assumed
+uint8_t buf[256];                       // echo of one block / edge times of the header
 uint32_t pcBitQ8 = BIT_Q8;              // TX bit of the PC-1500 as measured (ticks * 256)
 uint32_t rng;
 uint8_t hdr[7];                         // "CAL", TB, RB, RQ, version
@@ -430,48 +431,68 @@ void runMargins() {
 }
 
 // The header comes before the 'U' burst, so its bit length is not known yet:
-// record the line every 4 us (2048 samples, 8 ms) from its first falling edge
-// and decode it later with the bit length measured on the burst.
-const uint16_t SAMPLE_TICKS = 64;
-const uint16_t NSAMPLES = 2048;
-
-static inline bool sampleHigh(uint16_t i) { return (buf[i >> 3] >> (i & 7)) & 1; }
+// record the times of all its edges (input capture, switched between falling
+// and rising) and decode it later with the bit length measured on the burst.
+uint16_t *const edgeDt = (uint16_t *)buf;   // ticks from one edge to the next (128 entries)
+uint8_t nEdges;                             // edge 0 = first falling edge, then alternating
 
 bool recordHeader() {
   Serial.flush();
   cli();
-  uint16_t t0;
-  bool ok = waitIdle(60000) && waitFall(&t0, 60000);
-  if (ok) {
-    for (uint16_t i = 0; i < NSAMPLES / 8; i++) buf[i] = 0;
-    for (uint16_t i = 0; i < NSAMPLES; i++) {
-      waitUntil(t0 + i * SAMPLE_TICKS);
-      if (!LINE_LOW()) buf[i >> 3] |= 1 << (i & 7);
-    }
+  uint16_t prev, t;
+  bool ok = waitIdle(60000) && waitFall(&prev, 60000);   // start bit of the first byte
+  nEdges = 0;
+  bool low = true;
+  while (ok && nEdges < 128) {
+    waitUntil(prev + 160);                   // 10 us after an edge: no chatter of slow edges
+    if (low) TCCR1B &= ~_BV(ICES1);          // next: line rises (comparator output falls)
+    else TCCR1B |= _BV(ICES1);               // next: line falls
+    TIFR1 = _BV(ICF1);
+    if (!waitFall(&t, 10)) break;            // (any selected edge) none for 8-12 ms: the end
+    edgeDt[nEdges++] = t - prev;
+    prev = t;
+    low = !low;
   }
+  TCCR1B |= _BV(ICES1);                      // back to falling edges only
+  TIFR1 = _BV(ICF1);
   sei();
   return ok;
 }
 
-// decode up to 7 bytes from the samples with the bit length pcBitQ8
+// line level at t ticks after the first edge: high after an even number of edges
+bool levelAt(uint32_t t) {
+  uint32_t te = 0;
+  uint8_t c = 1;
+  for (uint8_t j = 0; j < nEdges; j++) {
+    te += edgeDt[j];
+    if (te > t) break;
+    c++;
+  }
+  return !(c & 1);
+}
+
+// decode up to 7 bytes from the recorded edges with the bit length pcBitQ8
 uint8_t decodeHeader() {
-  float bitS = pcBitQ8 / 256.0f / SAMPLE_TICKS;   // one bit in samples
-  float t0 = 0;                                     // the recording starts at the first edge
+  float bit = pcBitQ8 / 256.0f;              // ticks
+  uint32_t ts = 0;                           // start of the current frame
   uint8_t n = 0;
   while (n < 7) {
     uint8_t b = 0;
-    for (uint8_t k = 0; k < 8; k++) {
-      uint16_t i = (uint16_t)(t0 + (k + 1.5f) * bitS + 0.5f);
-      if (i >= NSAMPLES) return n;
-      if (sampleHigh(i)) b |= 1 << k;
-    }
+    for (uint8_t k = 0; k < 8; k++)
+      if (levelAt(ts + (uint32_t)((k + 1.5f) * bit))) b |= 1 << k;
     hdr[n++] = b;
-    // next start bit: first high -> low step after the middle of the stop bit
-    uint16_t i = (uint16_t)(t0 + 9.5f * bitS);
-    while (i < NSAMPLES && !sampleHigh(i)) i++;
-    while (i < NSAMPLES && sampleHigh(i)) i++;
-    if (i >= NSAMPLES) return n;
-    t0 = i - 0.5f;
+    // next start bit: the first falling edge after the middle of the stop bit
+    uint32_t after = ts + (uint32_t)(9.5f * bit), te = 0;
+    bool found = false;
+    for (uint8_t j = 0; j < nEdges; j++) {
+      te += edgeDt[j];                       // time of edge j+1; even edges are falling
+      if (!((j + 1) & 1) && te > after) {
+        ts = te;
+        found = true;
+        break;
+      }
+    }
+    if (!found) break;
   }
   return n;
 }
@@ -549,7 +570,7 @@ void report() {
   Serial.print(SKETCH_VERSION);
   Serial.print(F(", PC-1500 program v"));
   Serial.print(hdr[6]);
-  Serial.print(F(", installed TB="));
+  Serial.print(hdrGuess ? F(", header not read, assumed TB=") : F(", installed TB="));
   Serial.print(hdr[3]);
   Serial.print(F(" RB="));
   Serial.print(hdr[4]);
@@ -660,7 +681,8 @@ void setup() {
   TCCR1C = 0;
   TIMSK1 = 0;
   delay(10);
-  Serial.println(F("PC-1500 SERINOUT v7.0 (19200 bps) calibration, Arduino sketch v1"));
+  Serial.print(F("PC-1500 SERINOUT v7.0 (19200 bps) calibration, Arduino sketch v"));
+  Serial.println(SKETCH_VERSION);
 }
 
 void loop() {
@@ -690,15 +712,24 @@ void loop() {
   } else {
     Serial.println(F("No 'U' burst after the header: the bit length could not be measured."));
   }
-  if (n < 7 || hdr[0] != 'C' || hdr[1] != 'A' || hdr[2] != 'L') {
+  hdrGuess = n < 7 || hdr[0] != 'C' || hdr[1] != 'A' || hdr[2] != 'L';
+  if (hdrGuess) {
     Serial.print(F("Header not understood, received:"));
     for (uint8_t i = 0; i < n; i++) {
       Serial.print(' ');
       Serial.print(hdr[i], HEX);
     }
-    Serial.println(F(" - check the wiring and that SERINOUT v7.0 is installed with normal polarity."));
-    Serial.println(F("(If the PC-1500 program is still running, press BREAK and enter RUN 210.)"));
-    return;
+    Serial.println();
+    if (!txOk) {
+      Serial.println(F("No TX measurement either - check the wiring and that SERINOUT v7.0 is installed"));
+      Serial.println(F("with normal polarity. (If the PC-1500 program still runs: BREAK, then RUN 210.)"));
+      return;
+    }
+    Serial.println(F("Going on with the measurement; TB=66 RB=66 RQ=12 assumed."));
+    hdr[3] = 66;
+    hdr[4] = 66;
+    hdr[5] = 12;
+    hdr[6] = 0;
   }
   Serial.print(F("PC-1500: TB="));
   Serial.print(hdr[3]);
