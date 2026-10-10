@@ -15,7 +15,7 @@ PB2 or PB0). It moves up to about 1.9 KB/s, twice the 9600 bps of v6.2.
 |---|---|
 | `Basic/pc1500_uart_installer-v7.0_19200.txt` | BASIC installer of SERINOUT v7.0 (19200 bps), with the TX/RX test of v6.2 |
 | `Basic/pc1500_uart19200_calibration-v1.0.txt` | PC-1500 calibration program: talks to the Arduino, can set new timing constants |
-| `arduino/UART_Calibration/` | Arduino UNO sketch that measures the timing and prints the report (`UART_Calibration.ino`, `analysis.h`) |
+| `arduino/UART_Calibration/` | Arduino UNO sketch (one file, `UART_Calibration.ino`) that measures the timing and prints the report |
 | `asm/serout_v7.0.asm`, `asm/serin_v7.0.asm` | LH5801 sources (and `.lst` listings) of SEROUT and SERIN v7.0 |
 
 ## Why 19200 needs new code
@@ -89,8 +89,8 @@ CE-150.
    inversion ENTER (no), timing ENTER (defaults). The TX/RX tests can be skipped with `0`.
 3. In PRO mode enter `NEW` (removes the installer, the code stays), then type in
    `Basic/pc1500_uart19200_calibration-v1.0.txt`.
-4. Upload `arduino/UART_Calibration/UART_Calibration.ino` (with `analysis.h` in the same folder)
-   to the UNO and open the serial monitor at **115200 bps**.
+4. Upload `arduino/UART_Calibration/UART_Calibration.ino` to the UNO and open the serial
+   monitor at **115200 bps**.
 5. `RUN` the calibration program on the PC-1500. It shows the installed TB, RB and RQ, asks
    `NEW TIMING (1=YES)?` (press ENTER the first time) and `ARDUINO READY? ENTER`.
 6. The PC-1500 sends a header and 64 × 'U', then answers the Arduino block by block
@@ -134,7 +134,7 @@ SEROUT sends from the RX buffer, `RUN 210` switches it back to the TX buffer.
   time τ and goes back to mark. Each sample of SERIN before τ reads 0, each sample after τ
   reads 1, so the received byte (0xFF shifted left by the number of early samples) shows which
   samples came before τ. τ runs in 1 µs steps, four times, from 1 to 9 bits with frames back
-  to back and from 1 to 10 bits with pauses (for samples that come late). The PC-1500 echoes
+  to back and from 1 to 9.5 bits with pauses (for samples that come late). The PC-1500 echoes
   every block with SEROUT.
 - **Error tests:** random data back to back, with pauses of 0–6 bits, and at baud rates from
   −6 % to +6 %.
