@@ -77,7 +77,9 @@ at RAM+&1FC…&1FE.
 | GND, pins 52–55 | – | GND |
 
 With the diode, a 4.7 kΩ resistor from A5 to 5 V is recommended (faster rising edges); the
-sketch also switches on the internal pull-up. The PC-1500 must be out of the CE-150.
+sketch also switches on the internal pull-up. The diode can stay: the sketch measures the
+times on the falling edges, which the diode makes sharp. The PC-1500 must be out of the
+CE-150.
 
 ### Steps
 
@@ -107,25 +109,33 @@ SEROUT sends from the RX buffer, `RUN 210` switches it back to the TX buffer.
 
 | Line | Meaning |
 |---|---|
-| `TX 64 x 'U': bit … us` | length of a PC-1500 TX bit (falling-to-falling edges, 2 bits each); ideal 52.08 µs |
+| `TX 64 x 'U': bit … us` | length of a PC-1500 TX bit (falling-to-falling edges, 2 bits each); ideal 52.08 µs; also in LH5801 cycles, with the change of TB that is needed |
 | `stop bit` | length of the stop bit in bits (about 1.03) |
 | `RX probe fast` / `RX probe slow` | when SERIN reads each data bit, in µs after the start edge sent by the Arduino: earliest, mean and latest sample; ideal = middle of the bit. "fast" = characters back to back (fast polls), "slow" = 4-bit pauses (polls with the time-out) |
+| `needed change of RB` | change of the RX bit in cycles, not rounded and not limited to the v7.0 range |
 | `fit` | first sample and the time between samples (the RX bit) from the mean values |
 | `worst sample vs middle of bit` | the earliest and latest sample of all bits, in bits; the limit is ±0.5 |
 | `Random data …` | errors in 1020 random bytes, back to back and with random pauses |
 | `Baud margin …` | errors per 255 bytes when the Arduino sends 6 % slower … 6 % faster: the wider the range with 0, the better |
-| `SUGGESTED: TB= RB= RQ=` | constants computed from the measurement |
+| `SUGGESTED: TB= RB= RQ=` | constants computed from the measurement, within the ranges of v7.0 |
+| `NOTE: …` | a needed change does not fit into the ranges of v7.0: the code has to change (send the report) |
 
 ### How the measurement works
 
 - **TX:** the comparator of the UNO (1.1 V against A5) passes every edge of PC7 to the input
   capture of Timer1, which stores the time with 62.5 ns resolution. Inside a 'U' (0x55) frame
-  the falling edges are exactly 2 bits apart.
+  the falling edges are exactly 2 bits apart. Everything else the PC-1500 sends (the header, the
+  "R" before each block, the echoes) is received with this measured bit length, so the
+  calibration also works when the TX of the PC-1500 is several per cent off. The header comes
+  before the 'U' burst, so the sketch records the line every 4 µs and decodes the header after
+  the burst. (Sketch v1 received the PC-1500 at exactly 19200 bps; on the first real PC-1500
+  its TX bits were about 6 % longer, and the header could not be read.)
 - **RX:** the Arduino sends "probe" frames: a start bit, then the line stays at space until a
   time τ and goes back to mark. Each sample of SERIN before τ reads 0, each sample after τ
   reads 1, so the received byte (0xFF shifted left by the number of early samples) shows which
-  samples came before τ. τ runs from 1 to 9 bits in 1 µs steps, four times, back to back and
-  with pauses. The PC-1500 echoes every block with SEROUT.
+  samples came before τ. τ runs in 1 µs steps, four times, from 1 to 9 bits with frames back
+  to back and from 1 to 10 bits with pauses (for samples that come late). The PC-1500 echoes
+  every block with SEROUT.
 - **Error tests:** random data back to back, with pauses of 0–6 bits, and at baud rates from
   −6 % to +6 %.
 - The times are measured with the clock of the UNO. Its ceramic resonator may be off by up to

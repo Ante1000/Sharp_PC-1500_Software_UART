@@ -16,16 +16,19 @@
 // until TAU, then goes back to mark until the end of the frame. A sample of
 // the PC-1500 taken before TAU reads 0, one taken after TAU reads 1, so the
 // byte received is 0xFF << j: j samples came before TAU. TAU runs from 1.0
-// to 9.0 bits in steps of 1 us.
+// bit in steps of 1 us, to 9.0 bits (frames back to back) or 10.0 bits
+// (frames with pauses, for a PC-1500 whose samples come late).
 #define TAU0 833        // ticks (1.0 bit)
 #define TAU_STEP 16     // ticks (1 us)
-#define NTAU 417        // 417 steps: 1.0 .. 9.0 bits
+#define NTAU_FAST 417   // 1.0 .. 9.0 bits
+#define NTAU_SLOW 469   // 1.0 .. 10.0 bits
 
 static inline float tauUs(uint16_t idx) { return (TAU0 + (float)idx * TAU_STEP) * TICK_US; }
 static inline float idealUs(uint8_t k) { return (1.5f + k) * BIT_US; }   // middle of data bit k
 static inline int cyclesOf(float us) { return (int)floorf(us / CYCLE_US + 0.5f); }
 
 struct ProbeStats {
+  uint16_t ntau;        // number of TAU steps
   uint16_t frames;      // frames analysed
   uint16_t bad;         // received bytes that are not of the form 0xFF << j
   uint16_t lostBlocks;  // blocks whose echo had the wrong length
@@ -33,11 +36,12 @@ struct ProbeStats {
   uint16_t lo[8];       // smallest TAU index with bit k = 0 (earliest sample)
   uint16_t hi[8];       // largest TAU index with bit k = 1 (latest sample)
 
-  void reset() {
+  void reset(uint16_t n) {
+    ntau = n;
     frames = bad = lostBlocks = 0;
     for (uint8_t k = 0; k < 8; k++) {
       ones[k] = 0;
-      lo[k] = NTAU;
+      lo[k] = n;
       hi[k] = 0xFFFF;
     }
   }
@@ -57,10 +61,10 @@ struct ProbeStats {
     }
   }
 
-  bool valid() const { return frames >= NTAU; }
+  bool valid() const { return frames >= ntau; }
   // mean sample time of bit k after the start edge (us): integral of P(sample > TAU)
   float meanUs(uint8_t k) const {
-    return tauUs(0) + TAU_STEP * TICK_US * ((float)ones[k] * NTAU / frames - 0.5f);
+    return tauUs(0) + TAU_STEP * TICK_US * ((float)ones[k] * ntau / frames - 0.5f);
   }
   float minUs(uint8_t k) const { return tauUs(lo[k]) - 0.5f * TAU_STEP * TICK_US; }
   float maxUs(uint8_t k) const {
@@ -114,6 +118,9 @@ struct TxStats {
   // the interval across frames is bit 7 + the stop bit
   float stopBits() const { return ((float)bdSum / bdN * TICK_US - bitUs()) / bitUs(); }
 };
+
+// ---- needed change in LH5801 cycles (not rounded, not limited to the v7.0 ranges)
+static inline float neededCycles(float measuredUs, float idealUs) { return (idealUs - measuredUs) / CYCLE_US; }
 
 // ---- suggested constants (installer v7.0: TB 63..67, RB 63..71, RQ 8 or 12..20)
 static inline int clampInt(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }

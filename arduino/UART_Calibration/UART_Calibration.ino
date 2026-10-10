@@ -23,13 +23,17 @@
     - TX: the PC-1500 sends 64 x 'U' (0x55). The analog comparator (bandgap
       1.1 V against A5) gives every falling edge to the input capture of
       Timer1 (62.5 ns resolution); falling-to-falling intervals inside a
-      frame are 2 bits, across frames bit 7 + the stop bit.
+      frame are 2 bits, across frames bit 7 + the stop bit. Everything the
+      PC-1500 sends is then received with this measured bit length, so the
+      calibration also works when its TX is several per cent off. The
+      header ("CAL", TB, RB, RQ) comes before the 'U' burst: the line is
+      recorded every 4 us and decoded after the burst.
     - RX sample points: the Arduino sends probe frames: start bit, then the
       line stays at space until TAU and goes back to mark. The byte that the
       PC-1500 receives (and echoes) shows which of its 8 samples came before
-      TAU. TAU runs over 1..9 bits in 1 us steps, 4 times, with frames back
-      to back ("fast": the fast polls of SERIN find the start bit) and with
-      4-bit pauses ("slow": the polls with the time-out find it).
+      TAU. TAU runs in 1 us steps, 4 times, over 1..9 bits with frames back
+      to back ("fast": the fast polls of SERIN find the start bit) and over
+      1..10 bits with 4-bit pauses ("slow": the polls with the time-out).
     - Random data back to back and with random pauses, and the error count
       at baud rates from -6 % to +6 %.
   The PC-1500 echoes every block with SEROUT, so its TX is checked too.
@@ -45,8 +49,9 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);   // RS, E, D4, D5, D6, D7 (LCD Keypad Shie
 #define TX_SPACE() (PORTC &= ~_BV(4))   // space (low)
 #define LINE_LOW() (ACSR & _BV(ACO))    // A5 (PC-1500 PC7) below 1.1 V
 
-const uint8_t SKETCH_VERSION = 1;
-uint8_t buf[256];                       // echo of one block
+const uint8_t SKETCH_VERSION = 2;
+uint8_t buf[256];                       // echo of one block / samples of the header
+uint32_t pcBitQ8 = BIT_Q8;              // TX bit of the PC-1500 as measured (ticks * 256)
 uint32_t rng;
 uint8_t hdr[7];                         // "CAL", TB, RB, RQ, version
 ProbeStats probe[2];                    // 0 = fast (back to back), 1 = slow (pauses)
@@ -107,16 +112,17 @@ bool waitFall(uint16_t *t, uint32_t timeoutMs) {
   return true;
 }
 
-// receive one byte at 19200 bps (the line must be at mark); false on time-out
+// receive one byte from the PC-1500, with its measured bit length pcBitQ8
+// (the line must be at mark); false on time-out
 bool rxByte(uint8_t *out, uint32_t timeoutMs) {
   uint16_t t0;
   if (!waitFall(&t0, timeoutMs)) return false;
   uint8_t b = 0;
   for (uint8_t k = 0; k < 8; k++) {
-    waitUntil(t0 + (uint16_t)(((2UL * k + 3) * BIT_Q8) >> 9));   // middle of bit k
+    waitUntil(t0 + (uint16_t)(((2UL * k + 3) * pcBitQ8) >> 9));  // middle of bit k
     if (!LINE_LOW()) b |= 1 << k;
   }
-  waitUntil(t0 + (uint16_t)((19UL * BIT_Q8) >> 9));             // middle of the stop bit
+  waitUntil(t0 + (uint16_t)((19UL * pcBitQ8) >> 9));            // middle of the stop bit
   uint16_t ts = TCNT1;                                          // framing error: wait for
   while (LINE_LOW() && (uint16_t)(TCNT1 - ts) < 32000) {        // mark, at most 2 ms
   }
@@ -138,7 +144,8 @@ uint8_t rnd8() {
 // or -1 if the PC-1500 did not send "R" (ready).
 // PROBE: frame i of the block is probe number first+i; DATA: random bytes
 // from seed. gapBits: pause after each frame (0..6 bits, 7 = varying 0..6).
-int16_t block(Kind kind, uint16_t first, uint16_t n, uint32_t seed, uint8_t gapBits, int8_t pct) {
+int16_t block(Kind kind, uint16_t first, uint16_t n, uint32_t seed, uint8_t gapBits, int8_t pct,
+              uint16_t ntau) {
   uint8_t r;
   Serial.flush();
   cli();
@@ -156,7 +163,7 @@ int16_t block(Kind kind, uint16_t first, uint16_t n, uint32_t seed, uint8_t gapB
   for (uint16_t i = 0; i < n; i++) {
     uint16_t t0 = base + (uint16_t)vt;
     if (kind == PROBE) {
-      uint16_t tau = TAU0 + ((first + i) % NTAU) * TAU_STEP;
+      uint16_t tau = TAU0 + ((first + i) % ntau) * TAU_STEP;
       waitUntil(t0);
       TX_SPACE();
       waitUntil(t0 + tau);
@@ -201,14 +208,15 @@ void show(const __FlashStringHelper *a, int v, int of) {
 // ---------------------------------------------------------------- the tests
 void runProbes(uint8_t mode) {
   ProbeStats &ps = probe[mode];
-  ps.reset();
-  const uint16_t total = 4 * NTAU;
+  const uint16_t ntau = mode ? NTAU_SLOW : NTAU_FAST;
+  ps.reset(ntau);
+  const uint16_t total = 4 * ntau;
   uint16_t nb = (total + 254) / 255;
   for (uint16_t blk = 0; blk < nb && !aborted; blk++) {
     uint16_t first = blk * 255;
     uint16_t n = total - first < 255 ? total - first : 255;
     show(mode ? F("Probe slow") : F("Probe fast"), blk + 1, nb);
-    int16_t got = block(PROBE, first, n, 0, mode ? 4 : 0, 0);
+    int16_t got = block(PROBE, first, n, 0, mode ? 4 : 0, 0, ntau);
     if (got < 0) {
       aborted = true;
       return;
@@ -218,7 +226,7 @@ void runProbes(uint8_t mode) {
       continue;
     }
     // fast: the first frame of a block is found by the slow polls; skip it
-    for (uint16_t i = mode ? 0 : 1; i < n; i++) ps.add((first + i) % NTAU, buf[i]);
+    for (uint16_t i = mode ? 0 : 1; i < n; i++) ps.add((first + i) % ntau, buf[i]);
   }
 }
 
@@ -238,7 +246,7 @@ void runData() {
     for (uint8_t blk = 0; blk < 2 && !aborted; blk++) {
       show(mode ? F("Data pauses") : F("Data fast"), blk + 1, 2);
       uint32_t seed = 0x1234567UL + mode * 1000 + blk;
-      int16_t got = block(DATA, 0, 255, seed, mode ? 7 : 0, 0);
+      int16_t got = block(DATA, 0, 255, seed, mode ? 7 : 0, 0, 1);
       if (got < 0) {
         aborted = true;
         return;
@@ -255,7 +263,7 @@ void runMargins() {
     for (int8_t p = -6; p <= 6 && !aborted; p++) {
       show(mode ? F("Margin pause") : F("Margin fast"), p + 7, 13);
       uint32_t seed = 0x89ABCDEUL + mode * 100 + p;
-      int16_t got = block(DATA, 0, 255, seed, mode ? 3 : 0, p);
+      int16_t got = block(DATA, 0, 255, seed, mode ? 3 : 0, p, 1);
       if (got < 0) {
         aborted = true;
         return;
@@ -266,13 +274,51 @@ void runMargins() {
   }
 }
 
-bool receiveHeader() {
+// The header comes before the 'U' burst, so its bit length is not known yet:
+// record the line every 4 us (2048 samples, 8 ms) from its first falling edge
+// and decode it later with the bit length measured on the burst.
+const uint16_t SAMPLE_TICKS = 64;
+const uint16_t NSAMPLES = 2048;
+
+static inline bool sampleHigh(uint16_t i) { return (buf[i >> 3] >> (i & 7)) & 1; }
+
+bool recordHeader() {
   Serial.flush();
   cli();
-  bool ok = waitIdle(60000) && rxByte(&hdr[0], 60000);
-  for (uint8_t i = 1; ok && i < 7; i++) ok = rxByte(&hdr[i], 20);
+  uint16_t t0;
+  bool ok = waitIdle(60000) && waitFall(&t0, 60000);
+  if (ok) {
+    for (uint16_t i = 0; i < NSAMPLES / 8; i++) buf[i] = 0;
+    for (uint16_t i = 0; i < NSAMPLES; i++) {
+      waitUntil(t0 + i * SAMPLE_TICKS);
+      if (!LINE_LOW()) buf[i >> 3] |= 1 << (i & 7);
+    }
+  }
   sei();
   return ok;
+}
+
+// decode up to 7 bytes from the samples with the bit length pcBitQ8
+uint8_t decodeHeader() {
+  float bitS = pcBitQ8 / 256.0f / SAMPLE_TICKS;   // one bit in samples
+  float t0 = 0;                                     // the recording starts at the first edge
+  uint8_t n = 0;
+  while (n < 7) {
+    uint8_t b = 0;
+    for (uint8_t k = 0; k < 8; k++) {
+      uint16_t i = (uint16_t)(t0 + (k + 1.5f) * bitS + 0.5f);
+      if (i >= NSAMPLES) return n;
+      if (sampleHigh(i)) b |= 1 << k;
+    }
+    hdr[n++] = b;
+    // next start bit: first high -> low step after the middle of the stop bit
+    uint16_t i = (uint16_t)(t0 + 9.5f * bitS);
+    while (i < NSAMPLES && !sampleHigh(i)) i++;
+    while (i < NSAMPLES && sampleHigh(i)) i++;
+    if (i >= NSAMPLES) return n;
+    t0 = i - 0.5f;
+  }
+  return n;
 }
 
 void measureTx() {
@@ -324,6 +370,9 @@ void printProbe(uint8_t mode) {
   }
   float first, period;
   ps.fit(first, period);
+  Serial.print(F("  needed change of RB: "));
+  printUs(neededCycles(period, BIT_US), 1);
+  Serial.println(F(" cycles"));
   Serial.print(F("  fit: bit 0 at "));
   printUs(first, 1);
   Serial.print(F(" us (ideal 78.13), period "));
@@ -363,6 +412,13 @@ void report() {
     Serial.print(F(" us, stop bit "));
     printUs(txs.stopBits(), 1);
     Serial.println(F(" bits"));
+    Serial.print(F("   = "));
+    printUs(txs.bitUs() / CYCLE_US, 1);
+    Serial.print(F(" cycles at 1.3 MHz for TB="));
+    Serial.print(hdr[3]);
+    Serial.print(F("; needed change of TB: "));
+    printUs(neededCycles(txs.bitUs(), BIT_US), 1);
+    Serial.println(F(" cycles"));
   } else {
     Serial.println(F("TX: no clean 'U' burst received"));
   }
@@ -426,6 +482,10 @@ void report() {
   Serial.print(F(" RQ="));
   Serial.print(rq);
   Serial.println(F(")"));
+  if (txOk && (ntb != tb + (int)floorf(neededCycles(txs.bitUs(), BIT_US) + 0.5f)))
+    Serial.println(F("NOTE: the TX change is outside the range of v7.0 (TB 63..67): code change needed"));
+  if (nrb == 63 || nrb == 71 || nrq == 8 || nrq == 20)
+    Serial.println(F("NOTE: an RX value is at the end of its range: code change may be needed"));
   Serial.println(F("=== end of report: please copy everything from the first === line ==="));
 }
 
@@ -453,16 +513,36 @@ void loop() {
   lcd.print(F("UART 19200 calib"));
   lcd.setCursor(0, 1);
   lcd.print(F("Waiting PC-1500"));
-  if (LINE_LOW()) Serial.println(F("Warning: the line from PC7 (A5) is low - wiring, diode, polarity?"));
+  uint16_t lowFor = 0;
+  while (LINE_LOW() && lowFor < 200) {
+    delay(1);
+    lowFor++;
+  }
+  if (lowFor >= 200) Serial.println(F("Warning: the line from PC7 (A5) stays low - wiring, diode, polarity?"));
   Serial.println(F("Waiting for the PC-1500: RUN the calibration program and press ENTER."));
-  if (!receiveHeader()) return;
-  if (hdr[0] != 'C' || hdr[1] != 'A' || hdr[2] != 'L') {
+  if (!recordHeader()) return;
+  lcd.setCursor(0, 1);
+  lcd.print(F("TX timing...    "));
+  measureTx();
+  pcBitQ8 = txOk ? (uint32_t)((txs.inSum * 128ULL) / txs.inN) : BIT_Q8;   // 2 bits per interval
+  uint8_t n = decodeHeader();
+  if (txOk) {
+    Serial.print(F("PC-1500 TX bit: "));
+    printUs(txs.bitUs(), 1);
+    Serial.print(F(" us ("));
+    printUs((txs.bitUs() / BIT_US - 1) * 100, 1);
+    Serial.println(F(" % against 19200 bps); the PC-1500 is received with this bit length"));
+  } else {
+    Serial.println(F("No 'U' burst after the header: the bit length could not be measured."));
+  }
+  if (n < 7 || hdr[0] != 'C' || hdr[1] != 'A' || hdr[2] != 'L') {
     Serial.print(F("Header not understood, received:"));
-    for (uint8_t i = 0; i < 7; i++) {
+    for (uint8_t i = 0; i < n; i++) {
       Serial.print(' ');
       Serial.print(hdr[i], HEX);
     }
     Serial.println(F(" - check the wiring and that SERINOUT v7.0 is installed with normal polarity."));
+    Serial.println(F("(If the PC-1500 program is still running, press BREAK and enter RUN 210.)"));
     return;
   }
   Serial.print(F("PC-1500: TB="));
@@ -471,12 +551,9 @@ void loop() {
   Serial.print(hdr[4]);
   Serial.print(F(" RQ="));
   Serial.println(hdr[5]);
-  lcd.setCursor(0, 1);
-  lcd.print(F("TX timing...    "));
-  measureTx();
   aborted = false;
   for (uint8_t m = 0; m < 2; m++) {
-    probe[m].reset();
+    probe[m].reset(m ? NTAU_SLOW : NTAU_FAST);
     for (uint8_t i = 0; i < 13; i++) marginErr[m][i] = -1;
     randBytes[m] = randErr[m] = randLost[m] = 0;
   }
