@@ -44,7 +44,7 @@ similar module (check `PEEK &7863`), ❓ uncertain.
 
 | Configuration | Module | RAM start | RAM end | **`NEW`** | TX `CALL` (SO) | RX `CALL` (SI) | Free for BASIC after `NEW` | Confidence / notes |
 |---|---|---|---|---|---|---|---|---|
-| **PC-1500** (2 KB) | – | &4000 | &47FF | **`NEW &4400`** | &40C5 | &4130 | approx. 1 KB | ✅ The installer (approx. 4.1 KB) does not fit, see "PC-1500 with 2 KB" below |
+| **PC-1500** (2 KB) | – | &4000 | &47FF | **`NEW &4400`** | &40C5 | &4130 | approx. 1 KB | ✅ The installer (v6.2 approx. 4.1 KB, v7.2 approx. 4.6 KB) does not fit, see "PC-1500 with 2 KB" below |
 | **PC-1500A** (6 KB) | – | &4000 | &57FF | **`NEW &4400`** | &40C5 | &4130 | approx. 5 KB | ✅ configuration tested on real hardware |
 | PC-1500 + **CE-151** | 4 KB RAM | &3800 | &4FFF | **`NEW &3C00`** | &38C5 | &3930 | approx. 5 KB | 🔶 same design as CE-155, only smaller |
 | PC-1500A + **CE-151** | 4 KB RAM | &3800 | &5FFF | **`NEW &3C00`** | &38C5 | &3930 | approx. 9 KB | 🔶 |

@@ -21,9 +21,10 @@
                  ;   one data bit = TB = 50 + PAD cycles (MAME), PAD = 8, 10..15:
                  ;   TB = 58, 60..65; default 61. The second calibration (v7.1, TB = 62)
                  ;   measured 52.92 us per bit (68.8 real cycles), so TB = 61 gives about
-                 ;   52.15 us. Its 2-bit intervals also showed that a taken LOP takes about
-                 ;   3 cycles more than MAME's 11 (start bit + bit 0, which have one LOP
-                 ;   less, were 3.1 cycles shorter than two data bits).
+                 ;   52.15 us. Its 2-bit intervals fit a model in which a port write takes
+                 ;   1.9, SHR 3 and a taken branch into another 256-byte page about 1.5
+                 ;   cycles more than MAME (the bit loop lies across RAM+&100; start bit +
+                 ;   bit 0 have two such branches less than two data bits, 3.1 cycles).
                  ; - The bit counter is UL with LOP (8 bits), instead of a sentinel bit and
                  ;   BII A,&FF + BZR (7 cycles less).
                  ; - Both branches (bit 0 / bit 1) take 33 cycles; the port write comes 3

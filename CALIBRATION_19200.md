@@ -20,7 +20,8 @@ PB2 or PB0). It moves up to about 1.9 KB/s, twice the 9600 bps of v6.2.
 |---|---|
 | `Basic/pc1500_uart19200_calibration-v1.1.txt` | PC-1500 calibration program: installs SERINOUT v7.1 itself, talks to the Arduino, can set new timing constants |
 | `arduino/UART_Calibration/` | Arduino UNO sketch v4 (one file, `UART_Calibration.ino`) that measures the timing and prints the report |
-| `Basic/pc1500_uart_installer-v7.1_19200.txt` | BASIC installer of SERINOUT v7.1 (19200 bps), with the TX/RX test of v6.2: for use after the calibration (other polarity, PB0) |
+| `Basic/pc1500_uart_installer-v7.2.txt` | BASIC installer v7.2: all speeds, SERINOUT v7.1 at 19200 bps (speed 5); for use after the calibration (other polarity, PB0) |
+| `Basic/pc1500_uart_test-v7.2.txt` | TX/RX tester for every speed (after the installer: `NEW`, then this program) |
 | `asm/serout_v7.1.asm`, `asm/serin_v7.1.asm` | LH5801 sources (and `.lst` listings) of SEROUT and SERIN v7.1 |
 
 ## Why 19200 needs new code
@@ -89,15 +90,20 @@ Sketch v4 with calibration program v1.1, TB = 62, RB = 64, RQ = 22:
 | baud margin (sender) | 0 errors from −3 % to +3 % back to back, −2 % to +3 % with pauses (1 error at −3 %) | |
 | suggested | TB = 61, RB = 65, RQ = 16 | wanted 60.9, 65.1, 17.1 |
 
-The 2-bit intervals of the TX burst show which instruction is slow: start bit + bit 0 contain an
-`LDI UL` and a `NOP` where two data bits contain a second taken `LOP`; they take the same 124
-cycles in MAME's table, but start + bit 0 was 3.1 cycles shorter on the PC-1500. So a taken
-`LOP` takes about 3 cycles more than MAME's 11 (if `LDI` and `NOP` take no extra time). The start bit is thus 2.4 µs (0.05 bit) short;
-receivers do not notice that, so the code was not changed.
+The 2-bit intervals of the TX burst take the same 124 cycles in MAME's table, but start bit +
+bit 0 was 3.1 cycles shorter on the PC-1500 than two data bits. The bit loop of SEROUT v7.1 lies
+across a page boundary (RAM+&F6…&106): two data bits contain three taken branches into the other
+256-byte page, start bit + bit 0 only one. A model in which such a branch takes about 1.5 cycles
+more, a port write 1.9 cycles more (as measured with the I2C master) and `SHR` 3 cycles more than
+in MAME's table gives all five intervals of the second and the third calibration within 0.35 µs
+(four of them within 0.07 µs). (A taken `LOP` 3 cycles slower than in the table would also explain
+the difference, but SEROUT v6.2, whose bit at 9600 bps contains six `LOP`, would then be 16 % slow.)
+The start bit is thus 2.4 µs (0.05 bit) short; receivers do not notice that, so the code was not
+changed.
 
 RQ = 17 is not possible with the 4-byte pad (only 16 or 20…28); RQ = 16 puts the samples 1 cycle
 earlier than wanted and, as computed by the sketch, within −0.26 … +0.22 bit of the middle of the
-bits. The new defaults are therefore **TB = 61, RB = 65, RQ = 16** (installer v7.1 and line 60 of
+bits. The new defaults are therefore **TB = 61, RB = 65, RQ = 16** (installer v7.2 and line 60 of
 the calibration program v1.1).
 
 ## The third calibration: the defaults confirmed
@@ -119,9 +125,8 @@ The calibration has converged. The receiver tolerates senders from −3 % to +2 
 more than enough for devices with a crystal or a calibrated oscillator (USB-UART adapters, other
 microcontrollers, a second PC-1500 with SERINOUT v7.1).
 
-The simulator reproduces these margins when a taken `LOP` takes 3.1 cycles more than in MAME's
-table (models A and B of the first report plus this `LOP`): back to back the reception breaks
-down at +4 % because the next start bit then comes before the first fast poll and the error
+The simulator reproduces these margins with models A and B of the first report: back to back
+the reception breaks down at +4 % because the next start bit then comes before the first fast poll and the error
 adds up from character to character. Starting the fast polls 12 cycles earlier (the two `LDI`
 of the time-out moved behind them) brought +4 % back to back from 219 to 23 errors per 255 in
 the simulator and did not change the margins with pauses, so the code was left as it is.
@@ -136,7 +141,7 @@ the simulator and did not change the margins with pauses, so the code was left a
 
 The calibration program uses the defaults the first time and keeps the values of an installed
 v7.1 after that. Answer `1` at `NEW TIMING (1=YES)?` to type other values. The values are stored
-at RAM+&1FC…&1FE. The installer uses the defaults when you press ENTER at
+at RAM+&1FC…&1FE. The installer v7.2 (speed 5) uses the defaults when you press ENTER at
 `TIMING (ENTER=STD,1=SET)`; answer `1` to type the calibrated values.
 
 ## Calibration
@@ -178,7 +183,7 @@ CE-150.
    again and answer `1` at `NEW TIMING`; it installs SERINOUT v7.1 with them and measures again.
 
 After the calibration SERINOUT v7.1 stays installed with the last constants (normal polarity,
-PB2) and can be used at once. For inverted polarity or PB0, run the installer v7.1 and type the
+PB2) and can be used at once. For inverted polarity or PB0, run the installer v7.2 (speed 5) and type the
 calibrated constants at `TIMING`.
 
 If the program is stopped with BREAK during the echo loop, enter `RUN 210`: during the loop
@@ -223,7 +228,7 @@ SEROUT sends from the RX buffer, `RUN 210` switches it back to the TX buffer.
   −6 % to +6 %.
 - The times are measured with the clock of the UNO. Its ceramic resonator may be off by up to
   about 0.5 %, so the result is checked once more with a crystal-controlled device (for example
-  a USB-UART cable at 19200 bps and the RX/TX test of the installer, `RUN 530`).
+  a USB-UART cable at 19200 bps and the tester `Basic/pc1500_uart_test-v7.2.txt`).
 
 The calibration was tested in the simulator as a whole (calibration program in a BASIC
 interpreter, SEROUT/SERIN v7.1 in the LH5801 simulator, probe frames, echo, the analysis code
@@ -234,4 +239,5 @@ suggestion for the first two and RB = 65, RQ = 20 for the third. With the sugges
 the error-free range was about −3 % … +3 % (sender baud rate) back to back and with pauses.
 The same simulation of v7.0 with RB = 70 and RQ = 15 lost the fast probes, as the real PC-1500
 did. The real PC-1500 then suggested TB = 61, RB = 65, RQ = 16 (second calibration above): close
-to the third model, but none of the models has the slow `LOP` that its TX intervals show.
+to the third model; its TX intervals show the extra time of branches into another page, which
+none of the models has.
