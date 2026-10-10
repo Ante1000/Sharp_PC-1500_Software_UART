@@ -10,7 +10,9 @@
       tomorrow:   <subject> will <verb> <object>.           A cat will fix the bus.
       yesterday:  <subject> <verb, past> <object>.          The moon stole hot tea.
   at most 26 characters (one line of the PC-1500 display), and sends it back,
-  followed by CR.
+  filled up with spaces to 26 characters and followed by CR: always 27
+  characters, so SERIN (CALL SI,M with M = 27) returns at once instead of
+  waiting for its 0.5 s time-out.
 
   Wiring (the same as for the calibration sketch; everything at 5 V):
     PC-1500 PC7 (TX)  pin 10    ---|<|---  A5   Schottky diode, cathode (stripe) to PC7,
@@ -31,7 +33,7 @@
 
 #define BAUD 19200       // the speed installed on the PC-1500 (1200 .. 19200)
 #define LINE_LEN 26      // characters in one line of the PC-1500 display
-#define ANSWER_DELAY 200 // ms: the PC-1500 goes from CALL SO to CALL SI meanwhile
+#define ANSWER_DELAY 100 // ms: the PC-1500 goes from CALL SO to CALL SI meanwhile
 
 enum Tense : uint8_t { PRESENT, FUTURE, PAST, UNKNOWN };
 
@@ -436,6 +438,7 @@ void answer() {
   makeQuote(t, quote);
   delay(ANSWER_DELAY);                  // the PC-1500 is now waiting in CALL SI
   pc.print(quote);
+  for (uint8_t i = strlen(quote); i < LINE_LEN; i++) pc.write(' ');   // always LINE_LEN + CR
   pc.write('\r');
   Serial.print(F("Q: "));
   Serial.print(question);
