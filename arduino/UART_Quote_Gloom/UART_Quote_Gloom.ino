@@ -1,6 +1,6 @@
 /*
   UART_Quote_Gloom.ino - gloomy "quote of the day" for the Sharp PC-1500(A) with
-  SERINOUT v7.2 (Software UART), 19200 bps, Arduino UNO: grotesque little
+  SERINOUT v7.3 (Software UART), 19200 bps, Arduino UNO: grotesque little
   catastrophes from IT, electronics and space. The LCD Keypad Shield is optional.
 
   The PC-1500 program pc1500_uart_quote-v1.0.txt (the same as for UART_Quote)
@@ -25,7 +25,7 @@
     optional: 4.7 kOhm from A5 to 5 V (faster rising edges with the diode)
   The PC-1500 must be out of the CE-150 (PB2 is its cassette input).
 
-  On the PC-1500: installer v7.2 with speed 5 (19200), RX port PB2, INVERSION
+  On the PC-1500: installer v7.3 with speed 5 (19200), RX port PB2, INVERSION
   no; then NEW and the quote program. Other speeds: change BAUD below and
   install the same speed on the PC-1500.
 

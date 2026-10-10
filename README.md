@@ -22,11 +22,12 @@ printer/cassette interface.
   into RAM. Together they take only about 200 bytes, plus two 255-byte buffers (TX and RX).
 - The routines work by bit-banging: the signals are generated and read bit by bit in software,
   without a dedicated hardware circuit.
-- Baud rate: **1200, 2400, 4800, 9600 or 19200 bps**, selected in the installer v7.2
-  (`1`=1200, `2`=2400, `3`=4800, `4`, `0` or ENTER = 9600, `5`=19200). At 1200–9600 it installs
-  SEROUT/SERIN v6.2, at 19200 SEROUT/SERIN v7.1, which was calibrated on a real PC-1500 with an
-  Arduino UNO, see [CALIBRATION_19200.md](CALIBRATION_19200.md). The installer v6.2 (on the
-  tape recording) offers 1200–9600 bps.
+- Baud rate: **1200, 2400, 4800, 9600 or 19200 bps**: one installer, v7.3, for all of them
+  (`1`=1200, `2`=2400, `3`=4800, `4`, `0` or ENTER = 9600, `5`=19200). It has two engines with
+  the same `CALL`s, addresses and buffers: SEROUT/SERIN v6.2 for 1200–9600 bps and the fast
+  SEROUT/SERIN v7.1 for 19200 bps, calibrated on a real PC-1500 with an Arduino UNO (see
+  [CALIBRATION_19200.md](CALIBRATION_19200.md)). The installer v6.2 on the tape recording
+  offers 1200–9600 bps.
 - Format **8N1** (8 data bits, no parity, 1 stop bit), no RTS/CTS. An INVERSION option is
   available for devices with inverted signal levels.
 - **TTL/CMOS signal levels (+3.3 V / +5 V). This is NOT RS-232:** connecting the PC-1500(A) to
@@ -41,10 +42,11 @@ printer/cassette interface.
 
 | File | Contents |
 |---|---|
-| `Basic/pc1500_uart_installer-v7.2.txt` | BASIC installer v7.2: 1200, 2400, 4800, 9600 or 19200 bps |
-| `Basic/pc1500_uart_test-v7.2.txt` | TX/RX tester for every speed (run it after the installer v7.2) |
-| `Basic/pc1500_uart_installer-v6.2.txt` | BASIC installer and TX/RX tester, version 6.2 (1200–9600 bps) |
-| `Basic/pc1500_uart_link-v1.0.txt` | link program for two PC-1500s: demo, send text, receive (1200–9600 bps) |
+| `Basic/pc1500_uart_installer-v7.3.txt` | **BASIC installer v7.3: one installer for 1200, 2400, 4800, 9600 and 19200 bps** |
+| `Basic/pc1500_uart_test-v7.3.txt` | TX/RX tester for every speed (run it after the installer v7.3) |
+| `Basic/pc1500_uart_link-v2.0.txt` | link program for two PC-1500s: demo, send text, receive (1200–19200 bps, installer v7.3) |
+| `Basic/pc1500_uart_installer-v6.2.txt` | BASIC installer and TX/RX tester, version 6.2 (1200–9600 bps; on the tape recording) |
+| `Basic/pc1500_uart_link-v1.0.txt` | link program v1.0 for the installer v6.2 (1200–9600 bps; on the tape recording) |
 | `Basic/pc1500_uart_quote-v1.0.txt` | "quote of the day" demo: asks an Arduino UNO, see [below](#demo-quote-of-the-day-with-an-arduino-uno) |
 | `Basic/pc1500_uart19200_calibration-v1.1.txt` | PC-1500 program for the 19200 bps calibration with an Arduino UNO (installs SERINOUT v7.1 itself) |
 | `arduino/UART_Calibration/` | Arduino UNO sketch that measures the 19200 bps timing and prints a report |
@@ -52,9 +54,9 @@ printer/cassette interface.
 | `arduino/UART_Quote_Gloom/` | the same demo with gloomy, grotesque little catastrophes from IT, electronics and space |
 | `asm/` | LH5801 assembler sources and listings of SEROUT and SERIN v6.2 and v7.1 (19200 bps) |
 | `wav/SERINOUT.wav` | the installer v6.2 as a tape recording, for `CLOAD` |
-| `wav/link.wav` | the link program as a tape recording, for `CLOAD` |
+| `wav/link.wav` | the link program v1.0 as a tape recording, for `CLOAD` |
 | `img/` | connector drawing, connection diagrams and photos |
-| `Archive/` | older versions (installer v7.1, 19200 bps only) |
+| `Archive/` | older versions (installers v7.1 and v7.2, tester v7.2) |
 
 ## Connection
 
@@ -93,21 +95,21 @@ The UART uses the 60-pin connector on the left side of the PC-1500(A):
    (another value with a RAM module, see [HELP_NEW_memory.md](HELP_NEW_memory.md)), then
    `CLOAD` [ENTER].
 3. Play `wav/SERINOUT.wav` and wait until the installer v6.2 has loaded (or type in the
-   installer v7.2, which also offers 19200 bps).
+   installer v7.3, which also offers 19200 bps).
 4. Without the modification, switch off the PC-1500A and remove it from the CE-150.
 5. Connect the other UART device as shown above (or to the connector added to the CE-150 if
    the units are modified).
 6. Select RUN mode and type `RUN` [ENTER]. The installer asks for the baud rate, the RX port
    (default PB2; press `0` for PB0 with the modification) and the inversion (default no).
    ENTER alone selects the default.
-   - Installer v7.2: it shows `1=1200 2=2400 3=4800 BPS`, then asks `4/ENTER=9600 5=19200?`:
+   - Installer v7.3: it shows `1=1200 2=2400 3=4800 BPS`, then asks `4/ENTER=9600 5=19200?`:
      `1`, `2`, `3`, `4` (or `0`, or ENTER = 9600) or `5`. At 19200 bps it also asks
      `TIMING (ENTER=STD,1=SET)`: ENTER uses the calibrated constants.
    - Installer v6.2: `1`=1200, `2`=2400, `4`=4800 (ENTER), `9`=9600.
 7. The installer v6.2 then offers a TX test and an RX test. Press `0` to skip them; the RX test
-   can be started later with `RUN 530`. The installer v7.2 has no test (it would not fit into
-   the memory of a PC-1500A together with the code of both versions): type `NEW` in PRO mode,
-   then type in or load `Basic/pc1500_uart_test-v7.2.txt` and `RUN` it.
+   can be started later with `RUN 530`. The installer v7.3 has no test (it would not fit into
+   the memory of a PC-1500A together with the code of both engines): type `NEW` in PRO mode,
+   then type in or load `Basic/pc1500_uart_test-v7.3.txt` and `RUN` it.
 8. When you no longer need the installer, type `NEW` [ENTER] in PRO mode. The routines stay in
    memory and the rest of the memory is free for your BASIC program.
 
@@ -133,6 +135,34 @@ configuration; see also [HELP_NEW_memory.md](HELP_NEW_memory.md).
 SERIN waits up to about 30 s for the first character and returns to BASIC when no further
 character arrives within about 0.5 s.
 
+The installer v7.3 also writes a short description of the installation, so that other programs
+(the tester v7.3, the link program v2.0) do not have to know the code of the two engines:
+
+| Address | Contents |
+|---|---|
+| &41F7 | check byte: sum of 7 bytes of the installed code (SO+18, SI+77, SI+33…36, SI+48), modulo 256 |
+| &41F8 | 83 (`"S"`): a description is present |
+| &41F9 | speed: 1=1200, 2=2400, 3=4800, 4=9600, 5=19200 bps |
+| &41FA | RX port: 0 = PB0, 2 = PB2 |
+| &41FB | 0 = normal, 1 = inverted polarity |
+| &41FC…&41FE | 19200 bps timing TB, RB, RQ |
+
+A program reads it like this (the check byte tells whether the code is still the one the
+installer v7.3 wrote, for example not replaced by the installer v6.2 from tape):
+
+```
+100 B = PEEK (A0 + &1F9) : P = PEEK (A0 + &1FA) : V = PEEK (A0 + &1FB)
+105 C = PEEK (SO + 18) + PEEK (SI + 77) + PEEK (SI + 33) + PEEK (SI + 34)
+110 C = C + PEEK (SI + 35) + PEEK (SI + 36) + PEEK (SI + 48)
+115 C = C - 256 * INT (C / 256)
+120 IF PEEK (A0 + &1F8) <> 83 OR C <> PEEK (A0 + &1F7) GOTO 960
+125 BD = VAL (MID$ ("1200 2400 4800 9600 19200", 5 * B - 4, 5))
+```
+
+The link program v2.0 works at all five speeds (both PC-1500 with the installer v7.3, the same
+speed and polarity). At 19200 bps its preamble before each message is 170 NUL bytes (about
+90 ms) instead of 150 ms, so that a message of 80 characters still fits into the TX buffer.
+
 ## Demo: quote of the day with an Arduino UNO
 
 The PC-1500 asks, in a loop and at random, `What's for today?`, `tomorrow?` or `yesterday?`,
@@ -150,7 +180,7 @@ one line of the display: `Luck finds a golden key.`, `A cat will fix the bus.`,
 recommended with the diode. The LCD Keypad Shield is optional.)
 
 1. Upload `arduino/UART_Quote/UART_Quote.ino` (19200 bps; another speed: change `BAUD`).
-2. On the PC-1500 run the installer v7.2: speed `5`, RX port PB2, inversion no. Then `NEW`
+2. On the PC-1500 run the installer v7.3: speed `5`, RX port PB2, inversion no. Then `NEW`
    in PRO mode and type in `Basic/pc1500_uart_quote-v1.0.txt`.
 3. `RUN`. The program runs until you press BREAK (ON). Without an answer it waits about
    30 s, shows `NO ANSWER (ARDUINO?)` and asks again.

@@ -20,8 +20,8 @@ PB2 or PB0). It moves up to about 1.9 KB/s, twice the 9600 bps of v6.2.
 |---|---|
 | `Basic/pc1500_uart19200_calibration-v1.1.txt` | PC-1500 calibration program: installs SERINOUT v7.1 itself, talks to the Arduino, can set new timing constants |
 | `arduino/UART_Calibration/` | Arduino UNO sketch v4 (one file, `UART_Calibration.ino`) that measures the timing and prints the report |
-| `Basic/pc1500_uart_installer-v7.2.txt` | BASIC installer v7.2: all speeds, SERINOUT v7.1 at 19200 bps (speed 5); for use after the calibration (other polarity, PB0) |
-| `Basic/pc1500_uart_test-v7.2.txt` | TX/RX tester for every speed (after the installer: `NEW`, then this program) |
+| `Basic/pc1500_uart_installer-v7.3.txt` | BASIC installer v7.3: all speeds, SERINOUT v7.1 at 19200 bps (speed 5); for use after the calibration (other polarity, PB0) |
+| `Basic/pc1500_uart_test-v7.3.txt` | TX/RX tester for every speed (after the installer: `NEW`, then this program) |
 | `asm/serout_v7.1.asm`, `asm/serin_v7.1.asm` | LH5801 sources (and `.lst` listings) of SEROUT and SERIN v7.1 |
 
 ## Why 19200 needs new code
@@ -103,7 +103,7 @@ changed.
 
 RQ = 17 is not possible with the 4-byte pad (only 16 or 20…28); RQ = 16 puts the samples 1 cycle
 earlier than wanted and, as computed by the sketch, within −0.26 … +0.22 bit of the middle of the
-bits. The new defaults are therefore **TB = 61, RB = 65, RQ = 16** (installer v7.2 and line 60 of
+bits. The new defaults are therefore **TB = 61, RB = 65, RQ = 16** (installer v7.3 and line 60 of
 the calibration program v1.1).
 
 ## The third calibration: the defaults confirmed
@@ -141,7 +141,7 @@ the simulator and did not change the margins with pauses, so the code was left a
 
 The calibration program uses the defaults the first time and keeps the values of an installed
 v7.1 after that. Answer `1` at `NEW TIMING (1=YES)?` to type other values. The values are stored
-at RAM+&1FC…&1FE. The installer v7.2 (speed 5) uses the defaults when you press ENTER at
+at RAM+&1FC…&1FE. The installer v7.3 (speed 5) uses the defaults when you press ENTER at
 `TIMING (ENTER=STD,1=SET)`; answer `1` to type the calibrated values.
 
 ## Calibration
@@ -183,7 +183,7 @@ CE-150.
    again and answer `1` at `NEW TIMING`; it installs SERINOUT v7.1 with them and measures again.
 
 After the calibration SERINOUT v7.1 stays installed with the last constants (normal polarity,
-PB2) and can be used at once. For inverted polarity or PB0, run the installer v7.2 (speed 5) and type the
+PB2) and can be used at once. For inverted polarity or PB0, run the installer v7.3 (speed 5) and type the
 calibrated constants at `TIMING`.
 
 If the program is stopped with BREAK during the echo loop, enter `RUN 210`: during the loop
@@ -228,7 +228,7 @@ SEROUT sends from the RX buffer, `RUN 210` switches it back to the TX buffer.
   −6 % to +6 %.
 - The times are measured with the clock of the UNO. Its ceramic resonator may be off by up to
   about 0.5 %, so the result is checked once more with a crystal-controlled device (for example
-  a USB-UART cable at 19200 bps and the tester `Basic/pc1500_uart_test-v7.2.txt`).
+  a USB-UART cable at 19200 bps and the tester `Basic/pc1500_uart_test-v7.3.txt`).
 
 The calibration was tested in the simulator as a whole (calibration program in a BASIC
 interpreter, SEROUT/SERIN v7.1 in the LH5801 simulator, probe frames, echo, the analysis code

@@ -28,6 +28,8 @@ What the kilobyte contains (A0 = RAM start):
 | A0 … A0+&C4 | system area (RESERVE); a plain `NEW 0` starts BASIC right after it |
 | A0+&C5 | SEROUT (TX call) |
 | A0+&130 | SERIN (RX call) |
+| A0+&1F7 … A0+&1FB | description of the installation (installer v7.3): check byte, "S", speed 1–5, RX port, polarity |
+| A0+&1FC … A0+&1FE | 19200 bps timing TB, RB, RQ |
 | A0+&1FF | RC: number of characters received |
 | A0+&200 … A0+&2FE | RX buffer (255 characters) |
 | A0+&300 … A0+&3FE | TX buffer (255 characters) |
@@ -44,7 +46,7 @@ similar module (check `PEEK &7863`), ❓ uncertain.
 
 | Configuration | Module | RAM start | RAM end | **`NEW`** | TX `CALL` (SO) | RX `CALL` (SI) | Free for BASIC after `NEW` | Confidence / notes |
 |---|---|---|---|---|---|---|---|---|
-| **PC-1500** (2 KB) | – | &4000 | &47FF | **`NEW &4400`** | &40C5 | &4130 | approx. 1 KB | ✅ The installer (v6.2 approx. 4.1 KB, v7.2 approx. 4.6 KB) does not fit, see "PC-1500 with 2 KB" below |
+| **PC-1500** (2 KB) | – | &4000 | &47FF | **`NEW &4400`** | &40C5 | &4130 | approx. 1 KB | ✅ The installer (v6.2 approx. 4.1 KB, v7.3 approx. 4.7 KB) does not fit, see "PC-1500 with 2 KB" below |
 | **PC-1500A** (6 KB) | – | &4000 | &57FF | **`NEW &4400`** | &40C5 | &4130 | approx. 5 KB | ✅ configuration tested on real hardware |
 | PC-1500 + **CE-151** | 4 KB RAM | &3800 | &4FFF | **`NEW &3C00`** | &38C5 | &3930 | approx. 5 KB | 🔶 same design as CE-155, only smaller |
 | PC-1500A + **CE-151** | 4 KB RAM | &3800 | &5FFF | **`NEW &3C00`** | &38C5 | &3930 | approx. 9 KB | 🔶 |
