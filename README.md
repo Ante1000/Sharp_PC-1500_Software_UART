@@ -134,9 +134,10 @@ character arrives within about 0.5 s.
 
 ## Demo: quote of the day with an Arduino UNO
 
-The PC-1500 asks `What's for today?` (or `tomorrow?`, `yesterday?`) and the Arduino answers with
-a short sentence made from its word lists, at most 26 characters, one line of the display:
-`Luck finds a golden key.`, `A cat will fix the bus.`, `The moon stole hot tea.`
+The PC-1500 asks, in a loop and at random, `What's for today?`, `tomorrow?` or `yesterday?`,
+and the Arduino answers with a short sentence made from its word lists, at most 26 characters,
+one line of the display: `Luck finds a golden key.`, `A cat will fix the bus.`,
+`The moon stole hot tea.` The PC-1500 shows each answer for about 8 seconds, then asks again.
 
 | PC-1500 (60-pin) | In between | Arduino UNO |
 |---|---|---|
@@ -150,7 +151,8 @@ recommended with the diode. The LCD Keypad Shield is optional.)
 1. Upload `arduino/UART_Quote/UART_Quote.ino` (19200 bps; another speed: change `BAUD`).
 2. On the PC-1500 run the installer v7.2: speed `5`, RX port PB2, inversion no. Then `NEW`
    in PRO mode and type in `Basic/pc1500_uart_quote-v1.0.txt`.
-3. `RUN`: choose `1` (today, also ENTER), `2` (tomorrow) or `3` (yesterday); `0` ends.
+3. `RUN`. The program runs until you press BREAK (ON). Without an answer it waits about
+   30 s, shows `NO ANSWER (ARDUINO?)` and asks again.
 
 The word lists (34 subjects, 38 verbs, 40 objects) are at the top of the sketch and can be
 changed freely: a sentence longer than one line is never sent. The serial monitor (115200 bps)

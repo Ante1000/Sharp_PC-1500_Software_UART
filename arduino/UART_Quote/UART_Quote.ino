@@ -2,9 +2,10 @@
   UART_Quote.ino - "quote of the day" for the Sharp PC-1500(A) with SERINOUT v7.2
   (Software UART), 19200 bps, Arduino UNO. The LCD Keypad Shield is optional.
 
-  The PC-1500 program pc1500_uart_quote-v1.0.txt asks
+  The PC-1500 program pc1500_uart_quote-v1.0.txt asks, in a loop and at random,
       What's for today?   /   What's for tomorrow?   /   What's for yesterday?
-  (ended with CR). The UNO builds a short sentence from the word lists below,
+  (ended with CR) and shows each answer for about 8 s. The UNO builds a short
+  sentence from the word lists below,
       today:      <subject> <verb, present> <object>.      Luck finds a golden key.
       tomorrow:   <subject> will <verb> <object>.           A cat will fix the bus.
       yesterday:  <subject> <verb, past> <object>.          The moon stole hot tea.
