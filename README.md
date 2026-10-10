@@ -154,9 +154,9 @@ recommended with the diode. The LCD Keypad Shield is optional.)
 3. `RUN`. The program runs until you press BREAK (ON). Without an answer it waits about
    30 s, shows `NO ANSWER (ARDUINO?)` and asks again.
 
-The word lists (34 subjects, 38 verbs, 40 objects) are at the top of the sketch and can be
-changed freely: a sentence longer than one line is never sent. The serial monitor (115200 bps)
-shows every question and answer.
+The word lists (486 subjects, 411 verbs, 1004 objects, about 20 KB in flash; the sketch takes
+about 87 % of the UNO's flash) are in the sketch and can be changed freely: a sentence longer
+than one line is never sent. The serial monitor (115200 bps) shows every question and answer.
 
 ## Author
 
