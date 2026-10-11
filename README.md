@@ -1,8 +1,8 @@
-# Software UART for Sharp PC-1500(A)
+# UART7.3: Software UART for Sharp PC-1500(A)
 
-**SERIN and SEROUT routines** by Alex F4VTS
+**UART7.3: SERIN and SEROUT routines** by Alex F4VTS
 
-This software creates a serial port (UART) in the Sharp PC-1500(A) pocket computer without a
+UART7.3 creates a serial port (UART) in the Sharp PC-1500(A) pocket computer without a
 dedicated interface (such as the CE-158) and without any hardware modification. An optional,
 simple modification lets you use the UART while the PC-1500(A) is docked in the CE-150
 printer/cassette interface.
@@ -34,7 +34,8 @@ printer/cassette interface.
   an RS-232 port (up to ±15 V) will destroy its electronics.
 - Tested with USB-UART (FTDI) cables, Sharp, Casio and NEC pocket computers, sensors and modules,
   Arduino boards (5 V) and ESP32 boards (3.3 V).
-- No port to open, select or close (unlike the CE-158): one `CALL` sends, one `CALL` receives. Operates in packet mode, not continous mode.
+- No port to open, select or close (unlike the CE-158): one `CALL` sends, one `CALL` receives.
+  The UART works in packet mode, not in continuous mode.
 - Runs on a bare **PC-1500A**. A **PC-1500** needs a RAM module (e.g. CE-155), because
   UART7.3 does not fit in its 2 KB.
 
@@ -45,15 +46,15 @@ printer/cassette interface.
 | `Basic/uart7.3.txt` | **UART7.3: puts SEROUT and SERIN into RAM, for 1200, 2400, 4800, 9600 or 19200 bps** |
 | `Basic/pc1500_uart_test-v7.3.txt` | TEST7.3: TX/RX test for every speed (run it after UART7.3) |
 | `Basic/pc1500_uart_link-v2.0.txt` | LINK2.0: link program for two PC-1500s: demo, send text, receive (1200–19200 bps, after UART7.3) |
-| `Basic/pc1500_uart_quote-v1.0.txt` | "quote of the day" demo: asks an Arduino UNO, see [below](#demo-quote-of-the-day-with-an-arduino-uno) |
+| `Basic/pc1500_uart_quote-v1.0.txt` | QUOTE: "quote of the day" demo, asks an Arduino UNO (see [below](#demo-quote-of-the-day-with-an-arduino-uno)) |
 | `Basic/pc1500_uart19200_calibration-v1.1.txt` | PC-1500 program for the 19200 bps calibration with an Arduino UNO (installs SEROUT/SERIN v7.1 itself) |
 | `arduino/UART_Calibration/` | Arduino UNO sketch that measures the 19200 bps timing and prints a report |
-| `arduino/UART_Quote/` | Arduino UNO sketch for the quote demo: answers with a sentence from its word lists |
-| `arduino/UART_Quote_Gloom/` | the same demo with gloomy, grotesque little catastrophes from IT, electronics and space |
+| `arduino/UART_Quote_Gloom/` | Arduino UNO sketch for the quote demo: gloomy, grotesque little catastrophes from IT, electronics and space |
 | `asm/` | LH5801 assembler sources and listings of SEROUT and SERIN v6.2 and v7.1 (19200 bps), with the comments that UART7.3 leaves out so that it fits into a bare PC-1500A |
 | `wav/uart7.3.wav` | UART7.3 as a tape recording, for `CLOAD` |
 | `wav/test7.3.wav` | TEST7.3 as a tape recording, for `CLOAD` |
 | `wav/link2.wav` | LINK2.0 as a tape recording, for `CLOAD` |
+| `wav/quote.wav` | QUOTE (the quote demo) as a tape recording, for `CLOAD` |
 | `img/` | connector drawing, connection diagrams and photos |
 | `Archive/` | older versions: v6.2 (1200–9600 bps) with the link program v1.0, v7.1 (19200 bps only), v7.2 with its tester |
 
@@ -160,10 +161,13 @@ polarity). At 19200 bps its preamble before each message is 170 NUL bytes (about
 
 ## Demo: quote of the day with an Arduino UNO
 
-The PC-1500 asks, in a loop and at random, `What's for today?`, `tomorrow?` or `yesterday?`,
-and the Arduino answers with a short sentence made from its word lists, at most 26 characters,
-one line of the display: `Luck finds a golden key.`, `A cat will fix the bus.`,
-`The moon stole hot tea.` The PC-1500 shows each answer for about 8 seconds, then asks again.
+The PC-1500 asks, in a loop and at random, `What's for today?`, `tomorrow?` or `yesterday?`
+(its display shows `WHAT IS GOING ON TODAY?`, `WHAT IS UP TOMORROW?` or
+`WHAT HAPPENED YESTERDAY?`), and the Arduino answers with a short, gloomy and grotesque
+sentence from IT, electronics and space, at most 26 characters, one line of the display:
+`A consultant ate the LPTs.`, `The UART sang in water.`, `Diodes danced gloomily.`,
+`Mournfully the HDD worked.` The PC-1500 shows each answer for about 2 seconds (`WAIT 120` in
+line 290), then asks again.
 
 | PC-1500 (60-pin) | In between | Arduino UNO |
 |---|---|---|
@@ -174,26 +178,25 @@ one line of the display: `Luck finds a golden key.`, `A cat will fix the bus.`,
 (The same wiring as for the 19200 bps calibration; a 4.7 kΩ resistor from A5 to 5 V is
 recommended with the diode. The LCD Keypad Shield is optional.)
 
-1. Upload `arduino/UART_Quote/UART_Quote.ino` (19200 bps; another speed: change `BAUD`).
-2. On the PC-1500 run UART7.3: speed `5`, RX port PB2, inversion no. Then `NEW`
-   in PRO mode and type in `Basic/pc1500_uart_quote-v1.0.txt`.
+1. Upload `arduino/UART_Quote_Gloom/UART_Quote_Gloom.ino` (19200 bps; another speed: change
+   `BAUD`).
+2. On the PC-1500 run UART7.3: speed `5`, RX port PB2, inversion no. Then `NEW` in PRO mode
+   and load QUOTE (`CLOAD` in the CE-150, `wav/quote.wav`) or type in
+   `Basic/pc1500_uart_quote-v1.0.txt`.
 3. `RUN`. The program runs until you press BREAK (ON). Without an answer it waits about
    30 s, shows `NO ANSWER (ARDUINO?)` and asks again.
 
-The word lists (486 subjects, 411 verbs, 1004 objects, about 20 KB in flash; the sketch takes
-about 87 % of the UNO's flash) are in the sketch and can be changed freely: a sentence longer
-than one line is never sent. The serial monitor (115200 bps) shows every question and answer.
-
-`arduino/UART_Quote_Gloom/UART_Quote_Gloom.ino` works with the same PC-1500 program and wiring,
-but its sentences are gloomy and grotesque, from IT, electronics and space, in four patterns:
-`A consultant ate the LPTs.`, `The UART sang in water.`, `Diodes danced gloomily.`,
-`Mournfully the HDD worked.` It has 404 subjects (also plural: `Diodes dance`), 328 verbs,
-133 adverbs, 148 places and 503 objects, and also takes about 87 % of the UNO's flash.
+The sentences follow four patterns: subject, verb and object; subject, verb and place;
+subject, verb and adverb; adverb, subject and verb, in the present (today), future (tomorrow)
+or past tense (yesterday). The word lists (404 subjects, also plural: `Diodes dance`, 328 verbs,
+133 adverbs, 148 places and 503 objects; the sketch takes about 87 % of the UNO's flash) are in
+the sketch and can be changed freely: a sentence longer than one line is never sent. The serial
+monitor (115200 bps) shows every question and answer.
 
 ## Author
 
 Comments, bug reports, ideas and inquiries: alex.f4vts@gmail.com (I may not be able to respond
 immediately).
 
-I created the SERIN/SEROUT software UART myself, with help from Claude Code. It is based on the
-idea of the SAVER/LOADER program published in the Japanese magazine I/O (1983).
+I created UART7.3, the SERIN/SEROUT software UART, myself, with help from Claude Code. It is
+based on the idea of the SAVER/LOADER program published in the Japanese magazine I/O (1983).

@@ -3,10 +3,10 @@
   UART7.3 (Software UART), 19200 bps, Arduino UNO: grotesque little
   catastrophes from IT, electronics and space. The LCD Keypad Shield is optional.
 
-  The PC-1500 program pc1500_uart_quote-v1.0.txt (the same as for UART_Quote)
+  The PC-1500 program pc1500_uart_quote-v1.0.txt (on tape: wav/quote.wav)
   asks, in a loop and at random,
       What's for today?   /   What's for tomorrow?   /   What's for yesterday?
-  (ended with CR) and shows each answer for about 8 s. The UNO builds a sentence
+  (ended with CR) and shows each answer for about 2 s. The UNO builds a sentence
   from the word lists below in one of four patterns, in the present (today),
   future (tomorrow) or past tense (yesterday):
       <subject> <verb> <object>.      A consultant ate the LPTs.
@@ -17,7 +17,7 @@
   filled up with spaces to 26 characters and followed by CR (always 27
   characters, so CALL SI,M with M = 27 returns at once).
 
-  Wiring (the same as for UART_Quote and the calibration; everything at 5 V):
+  Wiring (the same as for the calibration; everything at 5 V):
     PC-1500 PC7 (TX)  pin 10    ---|<|---  A5   Schottky diode, cathode (stripe) to PC7,
                                            or a 1 kOhm resistor
     PC-1500 PB2 (RX)  pin 27    --[470]--  A4

@@ -12,7 +12,7 @@
   The PC-1500 must be out of the CE-150. The PC-1500 program
   pc1500_uart19200_calibration-v1.1.txt installs SERIN/SEROUT v7.1 itself (normal
   polarity, RX port PB2). The older program v1.0 (SERIN/SEROUT v7.0, in the git
-  history of this branch) also works: the header tells the sketch which
+  history of this repository) also works: the header tells the sketch which
   version runs.
 
   Use:
