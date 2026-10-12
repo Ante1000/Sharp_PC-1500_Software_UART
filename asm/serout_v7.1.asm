@@ -4,6 +4,9 @@
 ; CPU LH5801 @ 1.3 MHz, output PC7 (&F008 bit 7).
 ;   normal (TTL):  idle and bit "1" = high, start bit and "0" = low
 ;   inverted:      idle and bit "1" = low,  start bit and "0" = high
+; Update (October 2026): SIE before the final RTN switches the interrupts on
+; again, as BASIC had them before the CALL (RIE at the start switches them off
+; for the timing). 2 bytes more; the timing and all other bytes are unchanged.
 ;
 ; Call from BASIC (as in v6.x):
 ;   CALL SO          send 1 character from TX+0
@@ -83,4 +86,5 @@ TDLY:   LOP  UL,TDLY
 CMPN:   CPI  XL,0           ; N characters sent? (N written at the start)
         BZR- CHAR           ; next character
         REC                 ; C=0: variable N unchanged
+        SIE                 ; interrupts on again for BASIC
         RTN

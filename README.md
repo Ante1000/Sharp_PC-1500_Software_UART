@@ -131,6 +131,12 @@ configuration; see also [HELP_NEW_memory.md](HELP_NEW_memory.md).
 SERIN waits up to about 30 s for the first character and returns to BASIC when no further
 character arrives within about 0.5 s.
 
+SEROUT and SERIN switch the interrupts off at their start (`RIE`), because an interrupt would
+disturb the bit timing, and switch them on again (`SIE`) just before they return to BASIC,
+which runs with the interrupts on. (Until October 2026 the routines returned with the
+interrupts still off; that did no harm in practice, because the next ROM routine with `SIE`,
+for example the next display output, switched them on again.)
+
 UART7.3 also writes a short description of the installation, so that other programs
 (TEST7.3, LINK2.0) do not have to know the code of the two versions of the routines:
 

@@ -46,54 +46,46 @@
 178 V = RQ - 8 : GOSUB 905 : Q1 = W1 : Q2 = W2 : Q3 = W3 : Q4 = W4
 180 PRINT "INSTALLING "; BD; " BPS..."
 185 IF B = 5 GOTO 400
-190 POKE SO+0, &FD, &BE, &84, &8B, 8, &BF, &80, &89, 7, &B5
-200 POKE SO+10, &FF, &8E, 5, 4, &89, 2, &B5, 1, &28, &48
-210 POKE SO+20, TP, &4A, 0, &58, &F0, &5A, 8, &FD, OM, VM
-220 POKE SO+30, &6A, KI, &88, 2, &45, &FD, OS, VS, &FB, &D1
-230 POKE SO+40, &6A, KS, &88, 2, &38, &83, 6, &F9, &FD, OS
-240 POKE SO+50, VS, &8E, 5, &FD, OM, VM, &38, &FB, &6A, KB
-250 POKE SO+60, &88, 2, &F9, &D5, &BF, &FF, &99, &17, &38, &38
-260 POKE SO+70, &F9, &FD, OM, VM, &6A, KT, &88, 2, &FD, &62
-270 POKE SO+80, &99, &30, &F9, &9A
-280 POKE SI+0, &FD, &BE, &84, &89, 6, 4, &8B, 3, &DF, &8E
-290 POKE SI+10, 2, &B5, &FE, &AE, CP, &FF, &48, RP, &4A, 0
-300 POKE SI+20, &58, &F0, &5A, &0D, &FD, &59, DB, &54, &54, &68
-310 POKE SI+30, 0, &B5, &12, &FD, &5D, BM, FM, &0B, &88, 7
-320 POKE SI+40, &FD, &62, &99, &0B, &DF, &99, &0E, &8E, &3D, &FD
-330 POKE SI+50, &5D, BM, FS, &0B, &88, 7, &FD, &62, &99, &0B
-340 POKE SI+60, &DF, &99, &0E, &8E, &2D, &6A, KH, &88, 2, &FD
-350 POKE SI+70, &5D, BM, RM, &19, &68, 8, &6A, KB, &88, 2
-360 POKE SI+80, &38, &38, &FD, &5D, BM, &FB, FM, 1, &F9, &D1
-370 POKE SI+90, &FD, &62, &99, &12, &41, &A5, CP, &FF, &8B, &0A
-380 POKE SI+100, &DF, &AE, CP, &FF, &68, &4D, &B5, 1, &9E, &4D
-390 POKE SI+110, 4, &AE, CP, &FF, &48, 0, &FB, &9A
+190 POKE SO+0, &FD, &BE, &84, &8B, 8, &BF, &80, &89, 7, &B5, &FF, &8E
+200 POKE SO+12, 5, 4, &89, 2, &B5, 1, &28, &48, TP, &4A, 0, &58
+210 POKE SO+24, &F0, &5A, 8, &FD, OM, VM, &6A, KI, &88, 2, &45, &FD
+220 POKE SO+36, OS, VS, &FB, &D1, &6A, KS, &88, 2, &38, &83, 6, &F9
+230 POKE SO+48, &FD, OS, VS, &8E, 5, &FD, OM, VM, &38, &FB, &6A, KB
+240 POKE SO+60, &88, 2, &F9, &D5, &BF, &FF, &99, &17, &38, &38, &F9, &FD
+250 POKE SO+72, OM, VM, &6A, KT, &88, 2, &FD, &62, &99, &30, &F9, &FD
+260 POKE SO+84, &81, &9A
+280 POKE SI+0, &FD, &BE, &84, &89, 6, 4, &8B, 3, &DF, &8E, 2, &B5
+290 POKE SI+12, &FE, &AE, CP, &FF, &48, RP, &4A, 0, &58, &F0, &5A, &0D
+300 POKE SI+24, &FD, &59, DB, &54, &54, &68, 0, &B5, &12, &FD, &5D, BM
+310 POKE SI+36, FM, &0B, &88, 7, &FD, &62, &99, &0B, &DF, &99, &0E, &8E
+320 POKE SI+48, &3D, &FD, &5D, BM, FS, &0B, &88, 7, &FD, &62, &99, &0B
+330 POKE SI+60, &DF, &99, &0E, &8E, &2D, &6A, KH, &88, 2, &FD, &5D, BM
+340 POKE SI+72, RM, &19, &68, 8, &6A, KB, &88, 2, &38, &38, &FD, &5D
+350 POKE SI+84, BM, &FB, FM, 1, &F9, &D1, &FD, &62, &99, &12, &41, &A5
+360 POKE SI+96, CP, &FF, &8B, &0A, &DF, &AE, CP, &FF, &68, &4D, &B5, 1
+370 POKE SI+108, &9E, &4D, 4, &AE, CP, &FF, &48, 0, &FB, &FD, &81, &9A
 395 GOTO 692
-400 POKE SO+0, &FD, &BE, &84, &8B, 8, &BF, &80, &89, 7, &B5
-410 POKE SO+10, &FF, &8E, 5, 4, &89, 2, &B5, 1, &AE, CP
-420 POKE SO+20, &12, &48, TP, &4A, 0, &58, &F0, &5A, 8, &FD
-430 POKE SO+30, OM, VM, &6A, KI, &88, 2, &45, &FD, OS, VS
-440 POKE SO+40, P1, P2, P3, &6A, 7, &8E, 0, &38, &D5, &83
-450 POKE SO+50, 5, &FD, OS, VS, &8E, 4, &FD, OM, VM, &38
-460 POKE SO+60, P1, P2, P3, &D5, &88, &11, &6E, 0, &F9, &FD
-470 POKE SO+70, OM, VM, &6A, KT, &88, 2, &4E, 0, &99, &2C
-480 POKE SO+80, &F9, &9A
-490 POKE SI+0, &FD, &BE, &84, &89, 3, 4, &89, 2, &B5, &FF
-500 POKE SI+10, &AE, CP, &9E, &48, RP, &4A, 0, &58, &F0, &5A
-510 POKE SI+20, &0D, &FD, &59, DB, &5A, &0F, &68, &FF, &B5, &11
-520 POKE SI+30, &FD, &5D, BM, FM, &0B, &88, 7, &FD, &62, &93
-530 POKE SI+40, &0B, &DF, &93, &0E, &8E, &6C, &FD, &5D, BM, FS
-540 POKE SI+50, &1B, &88, 7, &FD, &5D, BM, FS, &14, &FD, &62
-550 POKE SI+60, &FD, &5D, BM, FS, &0D, &93, &15, &DF, &FD, &5D
-560 POKE SI+70, BM, FS, 5, &93, &1D, &8E, &4D, &38, &FD, &5D
-570 POKE SI+80, BM, RM, &25, &B5, &80, &8E, 0, Q1, Q2, Q3
-580 POKE SI+90, Q4, R1, R2, R3, R4, &FD, &5D, BM, FS, 3
-590 POKE SI+100, &FB, &8E, 2, &F9, &38, &D1, &91, &11, &41, &4E
-600 POKE SI+110, 0, &8B, &29, &68, &4C, &B5, 0, &FD, &5D, BM
-610 POKE SI+120, RS, &2D, &FD, &5D, BM, RS, &32, &FD, &5D, BM
-620 POKE SI+130, RS, &37, &FD, &5D, BM, RS, &3C, &FD, &5D, BM
-630 POKE SI+140, RS, &41, &FD, &5D, BM, RS, &46, &FD, &5D, BM
-640 POKE SI+150, RS, &4B, &9E, &6C, 4, &AE, CP, &FF, &48, 0
-650 POKE SI+160, &FB, &9A
+400 POKE SO+0, &FD, &BE, &84, &8B, 8, &BF, &80, &89, 7, &B5, &FF, &8E
+410 POKE SO+12, 5, 4, &89, 2, &B5, 1, &AE, CP, &12, &48, TP, &4A
+420 POKE SO+24, 0, &58, &F0, &5A, 8, &FD, OM, VM, &6A, KI, &88, 2
+430 POKE SO+36, &45, &FD, OS, VS, P1, P2, P3, &6A, 7, &8E, 0, &38
+440 POKE SO+48, &D5, &83, 5, &FD, OS, VS, &8E, 4, &FD, OM, VM, &38
+450 POKE SO+60, P1, P2, P3, &D5, &88, &11, &6E, 0, &F9, &FD, OM, VM
+460 POKE SO+72, &6A, KT, &88, 2, &4E, 0, &99, &2C, &F9, &FD, &81, &9A
+490 POKE SI+0, &FD, &BE, &84, &89, 3, 4, &89, 2, &B5, &FF, &AE, CP
+500 POKE SI+12, &9E, &48, RP, &4A, 0, &58, &F0, &5A, &0D, &FD, &59, DB
+510 POKE SI+24, &5A, &0F, &68, &FF, &B5, &11, &FD, &5D, BM, FM, &0B, &88
+520 POKE SI+36, 7, &FD, &62, &93, &0B, &DF, &93, &0E, &8E, &6C, &FD, &5D
+530 POKE SI+48, BM, FS, &1B, &88, 7, &FD, &5D, BM, FS, &14, &FD, &62
+540 POKE SI+60, &FD, &5D, BM, FS, &0D, &93, &15, &DF, &FD, &5D, BM, FS
+550 POKE SI+72, 5, &93, &1D, &8E, &4D, &38, &FD, &5D, BM, RM, &25, &B5
+560 POKE SI+84, &80, &8E, 0, Q1, Q2, Q3, Q4, R1, R2, R3, R4, &FD
+570 POKE SI+96, &5D, BM, FS, 3, &FB, &8E, 2, &F9, &38, &D1, &91, &11
+580 POKE SI+108, &41, &4E, 0, &8B, &29, &68, &4C, &B5, 0, &FD, &5D, BM
+590 POKE SI+120, RS, &2D, &FD, &5D, BM, RS, &32, &FD, &5D, BM, RS, &37
+600 POKE SI+132, &FD, &5D, BM, RS, &3C, &FD, &5D, BM, RS, &41, &FD, &5D
+610 POKE SI+144, BM, RS, &46, &FD, &5D, BM, RS, &4B, &9E, &6C, 4, &AE
+620 POKE SI+156, CP, &FF, &48, 0, &FB, &FD, &81, &9A
 660 POKE A0 + &1FC, TB, RB, RQ
 692 C = PEEK (SO + 18) + PEEK (SI + 77) + PEEK (SI + 33) + PEEK (SI + 34)
 694 C = C + PEEK (SI + 35) + PEEK (SI + 36) + PEEK (SI + 48)

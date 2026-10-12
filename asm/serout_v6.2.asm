@@ -1,5 +1,8 @@
 ; SEROUT v6.2: the code UART7.3 installs for 1200..9600 bps.
 ; Machine code identical to v6.1 (v6.2 only changed BASIC prompts and tests).
+; Update (October 2026): SIE before the final RTN switches the interrupts on
+; again, as BASIC had them before the CALL (RIE at the start switches them off
+; for the timing). 2 bytes more; the timing and all other bytes are unchanged.
 ;
 ; =====================================================================
 ; SEROUT v6.1 - software UART transmitter 8N1 for the Sharp PC-1500(A),
@@ -89,4 +92,5 @@ TDLY:   LOP  UL,TDLY
         DEC  UH
         BZR- CHAR           ; next character
         REC                 ; C=0: variable N unchanged
+        SIE                 ; interrupts on again for BASIC
         RTN

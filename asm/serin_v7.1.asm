@@ -3,6 +3,9 @@
 ; 19200 bps, input PB0 (pin 9) or PB2 (CMT-IN, pin 27), normal polarity
 ; (TTL: idle = high) or inverted (idle = low) - chosen in UART7.3.
 ; CPU LH5801 @ 1.3 MHz.
+; Update (October 2026): SIE before the final RTN switches the interrupts on
+; again, as BASIC had them before the CALL (RIE at the start switches them off
+; for the timing). 2 bytes more; the timing and all other bytes are unchanged.
 ;
 ; Call from BASIC (as in v6.x):
 ;   CALL SI          receive up to 255 characters
@@ -128,4 +131,5 @@ DONE:   LDA  XL                 ; number of characters = XL (RX starts a page)
         STA  (CP,&FF)           ; RC = number of characters
         LDI  XH,0               ; X = number of characters ...
         SEC                     ; ... C=1: BASIC puts X into the variable of CALL SI,M
+        SIE                     ; interrupts on again for BASIC
         RTN

@@ -60,7 +60,7 @@
 750 POKE SO+50, 5, &FD, OS, VS, &8E, 4, &FD, OM, VM, &38
 760 POKE SO+60, P1, P2, P3, &D5, &88, &11, &6E, 0, &F9, &FD
 770 POKE SO+70, OM, VM, &6A, KT, &88, 2, &4E, 0, &99, &2C
-780 POKE SO+80, &F9, &9A
+780 POKE SO+80, &F9, &FD, &81, &9A
 790 POKE SI+0, &FD, &BE, &84, &89, 3, 4, &89, 2, &B5, &FF
 800 POKE SI+10, &AE, CP, &9E, &48, RP, &4A, 0, &58, &F0, &5A
 810 POKE SI+20, &0D, &FD, &59, DB, &5A, &0F, &68, &FF, &B5, &11
@@ -77,7 +77,7 @@
 920 POKE SI+130, RS, &37, &FD, &5D, BM, RS, &3C, &FD, &5D, BM
 930 POKE SI+140, RS, &41, &FD, &5D, BM, RS, &46, &FD, &5D, BM
 940 POKE SI+150, RS, &4B, &9E, &6C, 4, &AE, CP, &FF, &48, 0
-950 POKE SI+160, &FB, &9A
+950 POKE SI+160, &FB, &FD, &81, &9A
 960 POKE A0 + &1FC, TB, RB, RQ : RETURN
 1000 REM --- 4-BYTE TIMING PAD OF V CYCLES (8, 12..20) -> W1..W4 ---
 1005 W1 = &38 : W2 = &38 : W3 = &38 : W4 = &38 : REM 20: 4 X NOP

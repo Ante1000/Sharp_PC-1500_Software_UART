@@ -1,4 +1,4 @@
-; SEROUT v7.1 - listing (addresses relative to SO = RAM+&0C5), 82 bytes
+; SEROUT v7.1 - listing (addresses relative to SO = RAM+&0C5), 84 bytes
 ;
                  ; =====================================================================
                  ; SEROUT v7.1 - software UART transmitter 8N1 for the Sharp PC-1500(A),
@@ -6,6 +6,9 @@
                  ; CPU LH5801 @ 1.3 MHz, output PC7 (&F008 bit 7).
                  ;   normal (TTL):  idle and bit "1" = high, start bit and "0" = low
                  ;   inverted:      idle and bit "1" = low,  start bit and "0" = high
+                 ; Update (October 2026): SIE before the final RTN switches the interrupts on
+                 ; again, as BASIC had them before the CALL (RIE at the start switches them off
+                 ; for the timing). 2 bytes more; the timing and all other bytes are unchanged.
                  ;
                  ; Call from BASIC (as in v6.x):
                  ;   CALL SO          send 1 character from TX+0
@@ -85,4 +88,5 @@
 4C  4E 00        CMPN:   CPI  XL,0           ; N characters sent? (N written at the start)
 4E  99 2C                BZR- CHAR           ; next character
 50  F9                   REC                 ; C=0: variable N unchanged
-51  9A                   RTN
+51  FD 81                SIE                 ; interrupts on again for BASIC
+53  9A                   RTN

@@ -1,7 +1,10 @@
 ; SERIN v6.2: the code UART7.3 installs for 1200..9600 bps.
 ; Machine code identical to v6.1 (v6.2 only changed BASIC prompts and tests).
+; Update (October 2026): SIE before the final RTN switches the interrupts on
+; again, as BASIC had them before the CALL (RIE at the start switches them off
+; for the timing). 2 bytes more; the timing and all other bytes are unchanged.
 ;
-; SERIN v6.1 - listing (addresses relative to SI = RAM+&130), 118 bytes
+; SERIN v6.1 - listing (addresses relative to SI = RAM+&130), 120 bytes
 ;
                  ; =====================================================================
                  ; SERIN v6.1 - software UART receiver 8N1 for the Sharp PC-1500(A),
@@ -109,4 +112,5 @@
 6F  AE CP FF             STA  (CP,&FF)       ; RC = number of characters received
 72  48 00                LDI  XH,0           ; X = number of characters ...
 74  FB                   SEC                 ; ... C=1: BASIC writes X into the variable of CALL SI,M
-75  9A                   RTN
+75  FD 81                SIE                 ; interrupts on again for BASIC
+77  9A                   RTN

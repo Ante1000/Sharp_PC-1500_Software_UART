@@ -47,7 +47,7 @@ similar module (check `PEEK &7863`), ❓ uncertain.
 | Configuration | Module | RAM start | RAM end | **`NEW`** | TX `CALL` (SO) | RX `CALL` (SI) | Free for BASIC after `NEW` | Confidence / notes |
 |---|---|---|---|---|---|---|---|---|
 | **PC-1500** (2 KB) | – | &4000 | &47FF | **`NEW &4400`** | &40C5 | &4130 | approx. 1 KB | ✅ UART7.3 (approx. 4.4 KB) does not fit, see "PC-1500 with 2 KB" below |
-| **PC-1500A** (6 KB) | – | &4000 | &57FF | **`NEW &4400`** | &40C5 | &4130 | approx. 5 KB | ✅ configuration tested on real hardware; UART7.3 (4439 bytes) leaves approx. 680 bytes for its variables |
+| **PC-1500A** (6 KB) | – | &4000 | &57FF | **`NEW &4400`** | &40C5 | &4130 | approx. 5 KB | ✅ configuration tested on real hardware; UART7.3 (4380 bytes) leaves approx. 740 bytes for its variables (it needs about 620 at 19200 bps) |
 | PC-1500 + **CE-151** | 4 KB RAM | &3800 | &4FFF | **`NEW &3C00`** | &38C5 | &3930 | approx. 5 KB | 🔶 same design as CE-155, only smaller |
 | PC-1500A + **CE-151** | 4 KB RAM | &3800 | &5FFF | **`NEW &3C00`** | &38C5 | &3930 | approx. 9 KB | 🔶 |
 | PC-1500 + **CE-155** | 8 KB RAM | &3800 | &5FFF | **`NEW &3C00`** | &38C5 | &3930 | approx. 9 KB | ✅ (`MEM` = 10042 with no program) |
@@ -88,7 +88,7 @@ RC = A0 + &1FF : RX = A0 + &200 : TX = A0 + &300
 ## PC-1500 with 2 KB
 
 On a PC-1500 without a module, only approx. 1 KB is left for BASIC after `NEW &4400`, while the
-tokenized UART7.3 takes 4439 bytes, so it does not fit. The simplest way:
+tokenized UART7.3 takes 4380 bytes, so it does not fit. The simplest way:
 
 1. Install on a PC-1500A (or on any configuration **with the same RAM start &4000**, i.e.
    without a memory module).
@@ -122,6 +122,6 @@ RAM start. Speed, port and inversion stay as selected during installation. A CE-
   [pc-1500.info](http://www.pc-1500.info/category/cat_family/cat_3modules/) and in
   [Wikipedia](https://en.wikipedia.org/wiki/Sharp_PC-1500). The CE-151 and CE-157 addresses are
   inferred from the CE-155 design, not measured.
-- Program size: UART7.3 tokenized exactly as on its tape recording (4439 bytes).
+- Program size: UART7.3 tokenized exactly as on its tape recording (4380 bytes).
 
 When in doubt, `PRINT PEEK &7863` on your own computer always decides.
