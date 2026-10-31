@@ -1,5 +1,7 @@
 # UART7.3: Software UART for Sharp PC-1500(A)
 
+[中文版](README_CN.md)
+
 **UART7.3: SERIN and SEROUT routines** by Alex F4VTS
 
 UART7.3 creates a serial port (UART) in the Sharp PC-1500(A) pocket computer without a
@@ -13,6 +15,7 @@ printer/cassette interface.
 | [Instruction_Francais.pdf](Instruction_Francais.pdf) | full description and user manual, in French |
 | [Modification_for_use_with_CE-150_EN.pdf](Modification_for_use_with_CE-150_EN.pdf) | optional modification for use with the CE-150 |
 | [Modification_for_use_with_CE-150_Francais.pdf](Modification_for_use_with_CE-150_Francais.pdf) | optional modification for use with the CE-150, in French |
+| [Modification_for_use_with_CE-150_CN.pdf](Modification_for_use_with_CE-150_CN.pdf) | optional modification for use with the CE-150, in Chinese |
 | [HELP_NEW_memory.md](HELP_NEW_memory.md) | `NEW` values and routine/buffer addresses for every RAM configuration |
 | [CALIBRATION_19200.md](CALIBRATION_19200.md) | SEROUT/SERIN v7.1 for 19200 bps and its calibration with an Arduino UNO |
 
