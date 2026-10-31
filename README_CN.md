@@ -1,5 +1,7 @@
 # UART7.3: 用于夏普 PC-1500(A) 的软件 UART
 
+[English](README.MD)
+
 **UART7.3：SERIN 与 SEROUT 例程** 作者：Alex F4VTS
 
 UART7.3 可以在没有专用接口（如 CE-158）、且无需任何硬件修改的情况下，在夏普 PC-1500(A) 掌上电脑中创建一个串行端口（UART）。一个可选的简单改装，可以让你在 PC-1500(A) 连接在 CE-150 打印机/磁带接口底座上时，也能使用该 UART。
