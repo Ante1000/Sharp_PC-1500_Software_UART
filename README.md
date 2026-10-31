@@ -1,5 +1,7 @@
 # UART7.3: Software UART for Sharp PC-1500(A)
 
+[中文版](README_CN.md)
+
 **UART7.3: SERIN and SEROUT routines** by Alex F4VTS
 
 UART7.3 creates a serial port (UART) in the Sharp PC-1500(A) pocket computer without a
