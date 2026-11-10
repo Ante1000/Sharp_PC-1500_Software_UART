@@ -1,6 +1,6 @@
 10 REM *** PC-1500 BMP280: TEMPERATURE + PRESSURE, FORCED MODE ***
 20 REM NEEDS I2C V1.4. SCL=PC7 SDA=PB2. BMP280 AT &77 (SDO=VDDIO)
-30 CLEAR : DIM O$(0) * 26, Q$(0) * 12 : WAIT 0 : D = &77
+30 CLEAR : WAIT 0 : D = &77
 40 A0 = (PEEK &7863) * 256 : IC = A0 + &400 : IA = A0 + &4FC
 50 TX = A0 + &300 : RX = A0 + &200
 60 IF PEEK (IC) <> &FD OR PEEK (IC + 1) <> &BE PRINT "I2C NOT INSTALLED" : END
@@ -48,10 +48,8 @@
 540 V1 = P9 * PA * PA / 2147483648 : V2 = PA * P8 / 32768
 545 PA = PA + (V1 + V2 + P7) / 16
 600 REM --- DISPLAY: T, THEN P; ANY KEY STOPS ---
-610 Y = TC : GOSUB 850 : O$(0) = "Temperature = " + Q$(0) + " C"
-620 WAIT 128 : PRINT O$(0)
-630 Y = PA / 100 : GOSUB 850 : O$(0) = "Pressure = " + Q$(0) + " hPa"
-640 PRINT O$(0)
+610 WAIT 128 : PRINT "Temperature ="; USING "###.##"; TC; " C"
+620 PRINT "Pressure ="; USING "#####.##"; PA / 100; " hPa"
 650 IF INKEY$ = "" GOTO 410
 660 WAIT 0 : PRINT "STOPPED" : END
 700 REM --- STATUS REGISTER &F3 INTO S ---
@@ -60,17 +58,9 @@
 800 REM --- X = 1,2,4,8,16 INTO C = 0..4 (X = 2^C), -1 = WRONG ---
 810 C = -1 : V = 1 : FOR J = 0 TO 4 : IF X = V LET C = J
 820 V = V * 2 : NEXT J : RETURN
-850 REM --- Y AS TEXT WITH 2 DECIMALS (-NN.NN) INTO Q$(0), NO USING ---
-852 N = INT (ABS (Y) * 100 + .5) : M = N : Q$(0) = ""
-854 R = N - 10 * INT (N / 10) : N = INT (N / 10)
-855 Q$(0) = CHR$ (48 + R) + Q$(0)
-856 IF LEN (Q$(0)) = 2 LET Q$(0) = "." + Q$(0)
-858 IF N > 0 OR LEN (Q$(0)) < 4 GOTO 854
-860 IF Y < 0 AND M > 0 LET Q$(0) = "-" + Q$(0)
-862 RETURN
 900 REM --- 16-BIT VALUE FROM RX+N (LSB FIRST) INTO X ---
 905 X = PEEK (RX + N) + 256 * PEEK (RX + N + 1) : RETURN
 910 GOSUB 900 : IF X > 32767 LET X = X - 65536
 915 RETURN
-980 WAIT 0 : PRINT "BAD CHIP ID "; I : END
-990 WAIT 0 : PRINT "I2C ERROR E="; E : BEEP 3 : END
+980 WAIT 0 : PRINT USING; "BAD CHIP ID "; I : END
+990 WAIT 0 : PRINT USING; "I2C ERROR E="; E : BEEP 3 : END
