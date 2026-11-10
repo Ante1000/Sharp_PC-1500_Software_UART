@@ -62,7 +62,8 @@
 820 V = V * 2 : NEXT J : RETURN
 850 REM --- Y AS TEXT WITH 2 DECIMALS (-NN.NN) INTO Q$(0), NO USING ---
 852 N = INT (ABS (Y) * 100 + .5) : M = N : Q$(0) = ""
-854 R = N - 10 * INT (N / 10) : Q$(0) = CHR$ (48 + R) + Q$(0) : N = INT (N / 10)
+854 R = N - 10 * INT (N / 10) : N = INT (N / 10)
+855 Q$(0) = CHR$ (48 + R) + Q$(0)
 856 IF LEN (Q$(0)) = 2 LET Q$(0) = "." + Q$(0)
 858 IF N > 0 OR LEN (Q$(0)) < 4 GOTO 854
 860 IF Y < 0 AND M > 0 LET Q$(0) = "-" + Q$(0)
