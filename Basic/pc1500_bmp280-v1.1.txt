@@ -1,6 +1,6 @@
 10 REM *** PC-1500 BMP280: TEMPERATURE + PRESSURE, FORCED MODE ***
 20 REM NEEDS I2C V1.4. SCL=PC7 SDA=PB2. BMP280 AT &77 (SDO=VDDIO)
-30 CLEAR : WAIT 0 : D = &77
+30 CLEAR : DIM O$(0) * 26, Q$(0) * 12 : WAIT 0 : D = &77
 40 A0 = (PEEK &7863) * 256 : IC = A0 + &400 : IA = A0 + &4FC
 50 TX = A0 + &300 : RX = A0 + &200
 60 IF PEEK (IC) <> &FD OR PEEK (IC + 1) <> &BE PRINT "I2C NOT INSTALLED" : END
@@ -18,16 +18,14 @@
 230 N = 12 : GOSUB 910 : P4 = X : N = 14 : GOSUB 910 : P5 = X
 240 N = 16 : GOSUB 910 : P6 = X : N = 18 : GOSUB 910 : P7 = X
 250 N = 20 : GOSUB 910 : P8 = X : N = 22 : GOSUB 910 : P9 = X
-300 REM --- SETUP: OVERSAMPLING AND IIR FILTER (ENTER = 0) ---
-310 WAIT 128 : PRINT "0,1,2,4,8,16 ENTER=0" : WAIT 0
-320 X = 0 : INPUT "temp oversampling ? "; X : GOSUB 800 : IF C < 0 GOTO 320
-330 CT = C
-340 X = 0 : INPUT "Pres oversampling ? "; X : GOSUB 800 : IF C < 0 GOTO 340
-350 CP = C
-360 X = 0 : INPUT "IR Filtering ? "; X : GOSUB 800 : IF C < 0 GOTO 360
-365 IF C > 0 LET C = C - 1
+300 REM --- SETUP: OVERSAMPLING AND IIR FILTER (1,2,4,8,16; ENTER = 1) ---
+310 WAIT 128 : PRINT "1,2,4,8,16 ENTER=1" : WAIT 0
+320 X = 1 : INPUT "temp oversampling ? "; X : GOSUB 800 : IF C < 0 GOTO 320
+330 CT = C + 1
+340 X = 1 : INPUT "Pres oversampling ? "; X : GOSUB 800 : IF C < 0 GOTO 340
+350 CP = C + 1
+360 X = 1 : INPUT "IR Filtering ? "; X : GOSUB 800 : IF C < 0 GOTO 360
 370 CF = C
-380 IF CT = 0 LET CT = 1 : WAIT 128 : PRINT "Temp x1 (needed for P)" : WAIT 0
 390 POKE TX, &F5, CF * 4 : POKE IA, D, 2, 0 : CALL IC, E : IF E <> 0 GOTO 990
 400 REM --- ONE MEASUREMENT: FORCED MODE (MODE = 01) ---
 410 POKE TX, &F4, CT * 32 + CP * 4 + 1 : POKE IA, D, 2, 0 : CALL IC, E
@@ -42,7 +40,6 @@
 485 V1 = (UT / 16384 - T1 / 1024) * T2
 490 V2 = UT / 131072 - T1 / 8192 : V2 = V2 * V2 * T3
 495 TF = V1 + V2 : TC = TF / 5120
-510 IF CP = 0 GOTO 600
 515 V1 = TF / 2 - 64000 : V2 = V1 * V1 * P6 / 32768
 520 V2 = V2 + V1 * P5 * 2 : V2 = V2 / 4 + P4 * 65536
 525 V1 = (P3 * V1 * V1 / 524288 + P2 * V1) / 524288
@@ -51,18 +48,25 @@
 540 V1 = P9 * PA * PA / 2147483648 : V2 = PA * P8 / 32768
 545 PA = PA + (V1 + V2 + P7) / 16
 600 REM --- DISPLAY: T, THEN P; ANY KEY STOPS ---
-610 WAIT 128 : PRINT "Temperature ="; USING "###.##"; TC; " C"
-620 IF CP = 0 GOTO 640
-630 PRINT "Pressure ="; USING "#####.##"; PA / 100; " hPa"
-640 IF INKEY$ = "" GOTO 410
-650 WAIT 0 : PRINT "STOPPED" : END
+610 Y = TC : GOSUB 850 : O$(0) = "Temperature = " + Q$(0) + " C"
+620 WAIT 128 : PRINT O$(0)
+630 Y = PA / 100 : GOSUB 850 : O$(0) = "Pressure = " + Q$(0) + " hPa"
+640 PRINT O$(0)
+650 IF INKEY$ = "" GOTO 410
+660 WAIT 0 : PRINT "STOPPED" : END
 700 REM --- STATUS REGISTER &F3 INTO S ---
 710 POKE TX, &F3 : POKE IA, D, 1, 1 : CALL IC, E : IF E <> 0 GOTO 990
 720 S = PEEK (RX) : RETURN
-800 REM --- X (0,1,2,4,8,16) INTO CODE C (0..5), C = -1 IF WRONG ---
-810 C = -1 : V = 1 : FOR J = 1 TO 5 : IF X = V LET C = J
-820 V = V * 2 : NEXT J : IF X = 0 LET C = 0
-830 RETURN
+800 REM --- X = 1,2,4,8,16 INTO C = 0..4 (X = 2^C), -1 = WRONG ---
+810 C = -1 : V = 1 : FOR J = 0 TO 4 : IF X = V LET C = J
+820 V = V * 2 : NEXT J : RETURN
+850 REM --- Y AS TEXT WITH 2 DECIMALS (-NN.NN) INTO Q$(0), NO USING ---
+852 N = INT (ABS (Y) * 100 + .5) : M = N : Q$(0) = ""
+854 R = N - 10 * INT (N / 10) : Q$(0) = CHR$ (48 + R) + Q$(0) : N = INT (N / 10)
+856 IF LEN (Q$(0)) = 2 LET Q$(0) = "." + Q$(0)
+858 IF N > 0 OR LEN (Q$(0)) < 4 GOTO 854
+860 IF Y < 0 AND M > 0 LET Q$(0) = "-" + Q$(0)
+862 RETURN
 900 REM --- 16-BIT VALUE FROM RX+N (LSB FIRST) INTO X ---
 905 X = PEEK (RX + N) + 256 * PEEK (RX + N + 1) : RETURN
 910 GOSUB 900 : IF X > 32767 LET X = X - 65536
